@@ -4,12 +4,14 @@
 // File name: projects/1/Or.hdl
 /**
  * Or gate:
- * if (a or b) out = 1, else out = 0 
+ * if (a or b) out = 1, else out = 0
  */
-CHIP Or {
+ CHIP Or {
     IN a, b;
     OUT out;
 
     PARTS:
-    //// Replace this comment with your code.
+    Not(in=a, out=not_a);
+    Not(in=b, out=not_b);
+    Nand(a=not_a, b=not_b, out=out);
 }

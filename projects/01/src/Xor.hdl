@@ -11,5 +11,7 @@ CHIP Xor {
     OUT out;
 
     PARTS:
-    //// Replace this comment with your code.
+    Nand(a=a, b=b, out=ab);
+    Or(a=a, b=b, out=or_ab);
+    And(a=ab, b=or_ab, out=out);
 }

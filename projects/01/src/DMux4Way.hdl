@@ -9,10 +9,30 @@
  *                [0, 0, in, 0] if sel = 10
  *                [0, 0, 0, in] if sel = 11
  */
+ // Wastes a lot of bits
 CHIP DMux4Way {
     IN in, sel[2];
     OUT a, b, c, d;
 
     PARTS:
     //// Replace this comment with your code.
+    Mux4Way16(a[0]=in, b=false, c=false, d=false, sel=sel, out[0]=a);
+    Mux4Way16(a=false, b[0]=in, c=false, d=false, sel=sel, out[0]=b);
+    Mux4Way16(a=false, b=false, c[0]=in, d=false, sel=sel, out[0]=c);
+    Mux4Way16(a=false, b=false, c=false, d[0]=in, sel=sel, out[0]=d);
+}
+
+
+// More scalable way
+CHIP DMux4Way {
+    IN in, sel[2];
+    OUT a, b, c, d;
+
+    PARTS:
+    //// Replace this comment with your code.
+    Not(in=sel[1], out=not_sel);
+    And(a=not_sel, b=in, out=in0);
+    And(a=sel[1], b=in, out=in1);
+    DMux(in=in0, sel=sel[0], a=a, b=b);
+    DMux(in=in1, sel=sel[0], a=c, b=d);
 }
