@@ -1,3 +1,4 @@
+#[derive(PartialEq, Debug)]
 pub enum Token {
     NormalToken {
         _type: TokenType,
@@ -11,6 +12,7 @@ pub enum Token {
     },
 }
 
+#[derive(PartialEq, Debug)]
 pub enum TokenType {
     // Single Characters
     LeftParam,
@@ -69,6 +71,8 @@ pub enum TokenType {
     R14,
     R15,
     R16,
+    KBD,
+    SCREEN,
 
     // Final
     EOF,

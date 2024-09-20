@@ -1,11 +1,13 @@
-use std::{env, path::Path};
+use std::{env, fs, path::Path};
+
+use rust_asm2hack::{scanner::Scanner, Token, TokenType};
 
 type ProgResult = Result<(), String>;
 
 fn compile_file(file_path: &str) -> ProgResult {
     let file_path = Path::new(file_path);
     // For now we ignore the folder struct to the file and just check that the file extension is .asm
-    if let None = file_path.file_name() {
+    if file_path.file_name().is_none() {
         return Err(format!("Expected a proper file path, not {:?}", file_path));
     }
     match file_path.extension() {
@@ -21,6 +23,29 @@ fn compile_file(file_path: &str) -> ProgResult {
             ))
         }
     }
+    let source = fs::read_to_string(file_path).expect("Read have read the file contents");
+    let s = source.chars().collect::<Vec<char>>();
+    let mut scanner = Scanner::new();
+    let mut tokens: Vec<Token> = Vec::new();
+    loop {
+        let token = scanner.scan_token(&s);
+        let t = if let Token::NormalToken {
+            _type,
+            start: _,
+            length: _,
+            line: _,
+        } = &token
+        {
+            matches!(_type, TokenType::EOF)
+        } else {
+            false
+        };
+        tokens.push(token);
+        if t {
+            break;
+        }
+    }
+    println!("{:?}", tokens);
 
     Ok(())
 }
