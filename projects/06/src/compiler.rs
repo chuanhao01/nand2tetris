@@ -103,6 +103,7 @@ impl Default for SymbolTable {
 pub struct Compiler {
     rom: Vec<[char; 16]>, // Final vector of all the 16 bit ROMs instructions
     tokens: Vec<Token>,
+    symbol_table: SymbolTable,
     had_error: bool,
 }
 
@@ -147,6 +148,82 @@ impl Compiler {
             }
         }
         self.tokens = new_tokens;
+    }
+
+    fn second_pass(&mut self, source: &Vec<char>) {
+        let mut current_line = 0;
+        let mut new_tokens: Vec<Token> = Vec::new();
+        let mut line_tokens: Vec<Token> = Vec::new();
+        for token in &self.tokens {
+            line_tokens.push(token.clone());
+            if let Token::NormalToken {
+                _type,
+                start: _,
+                length: _,
+                line: _,
+            } = token
+            {
+                match _type {
+                    TokenType::NewLine => {
+                        // Remove empty lines
+                    }
+                    TokenType::EOF => {
+                        new_tokens.append(&mut line_tokens);
+                    }
+                    _ => {
+                        // Continue
+                    }
+                }
+            }
+        }
+    }
+
+    fn instruction_label(
+        &mut self,
+        source: &Vec<char>,
+        line_tokens: &Vec<Token>,
+        current_line: usize,
+    ) {
+        // When passing control to this function, left paran and last EOL is already taken, we just need to parse the rest
+        if line_tokens.len() != 4 {
+            self.error(
+                source,
+                line_tokens[0].clone(),
+                String::from("Expected instruction label"),
+            );
+        }
+        if let Token::NormalToken {
+            _type: TokenType::RightParam,
+            start: _,
+            length: _,
+            line: _,
+        } = line_tokens[2]
+        {
+            // Continue
+        } else {
+            self.error(
+                source,
+                line_tokens[0].clone(),
+                String::from("Expected instruction label"),
+            );
+        }
+        if let Token::NormalToken {
+            _type: TokenType::Label,
+            start: _,
+            length: _,
+            line: _,
+        } = line_tokens[1]
+        {
+            // Add the label
+            self.symbol_table
+                .insert_instruction_label(source, &line_tokens[1], current_line);
+        } else {
+            self.error(
+                source,
+                line_tokens[0].clone(),
+                String::from("Expected instruction label"),
+            );
+        }
     }
 
     // fn instruction(&self, source: &Vec<char>) {
