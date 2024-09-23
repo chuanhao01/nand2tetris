@@ -474,6 +474,15 @@ mod tests {
                     line: 1,
                 },
             ),
+            (
+                "r1",
+                Token::NormalToken {
+                    _type: TokenType::Label,
+                    start: 0,
+                    length: 2,
+                    line: 1,
+                },
+            ),
         ]);
         for (s, expected) in seq {
             let mut scanner = Scanner::new();

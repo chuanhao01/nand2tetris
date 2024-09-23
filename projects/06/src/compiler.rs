@@ -1,103 +1,6 @@
-use std::collections::HashMap;
+use std::thread::current;
 
-use crate::{scanner::Scanner, Token, TokenType};
-
-struct SymbolTable {
-    table: HashMap<String, usize>,
-    current_memory: usize,
-}
-impl SymbolTable {
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn get_label(&self, source: &Vec<char>, token: &Token) -> String {
-        if let Token::NormalToken {
-            _type,
-            start,
-            length,
-            line: _,
-        } = token
-        {
-            source[start.to_owned()..(start.to_owned() + length.to_owned())]
-                .iter()
-                .collect::<String>()
-        } else {
-            // Should not be possible, as only valid tokens should be passed
-            panic!("Should be normal Token")
-        }
-    }
-
-    fn insert_instruction_label(
-        &mut self,
-        source: &Vec<char>,
-        token: &Token,
-        instruction_location: usize,
-    ) {
-        self.table
-            .insert(self.get_label(source, token), instruction_location);
-    }
-    fn insert_memory_label(&mut self, source: &Vec<char>, token: &Token) {
-        self.table
-            .insert(self.get_label(source, token), self.current_memory);
-        self.current_memory += 1;
-    }
-
-    fn get_symbol(&self, source: &Vec<char>, token: &Token) -> usize {
-        if let Token::NormalToken {
-            _type,
-            start: _,
-            length: _,
-            line: _,
-        } = token
-        {
-            match _type {
-                TokenType::SP => 0,
-                TokenType::LCL => 1,
-                TokenType::ARG => 2,
-                TokenType::THIS => 3,
-                TokenType::THAT => 4,
-                TokenType::R0 => 0,
-                TokenType::R1 => 1,
-                TokenType::R2 => 2,
-                TokenType::R3 => 3,
-                TokenType::R4 => 4,
-                TokenType::R5 => 5,
-                TokenType::R6 => 6,
-                TokenType::R7 => 7,
-                TokenType::R8 => 8,
-                TokenType::R9 => 9,
-                TokenType::R10 => 10,
-                TokenType::R11 => 11,
-                TokenType::R12 => 12,
-                TokenType::R13 => 13,
-                TokenType::R14 => 14,
-                TokenType::R15 => 15,
-                TokenType::SCREEN => 16384,
-                TokenType::KBD => 24576,
-                TokenType::Label => self
-                    .table
-                    .get(&self.get_label(source, token))
-                    .unwrap()
-                    .to_owned(),
-                _ => {
-                    // Should not happen either
-                    panic!("Should be a label token");
-                }
-            }
-        } else {
-            panic!("Should be normal Token")
-        }
-    }
-}
-impl Default for SymbolTable {
-    fn default() -> Self {
-        Self {
-            table: HashMap::default(),
-            current_memory: 16,
-        }
-    }
-}
+use crate::{Assembler, Scanner, SymbolTable, Token, TokenType};
 
 #[derive(Default)]
 pub struct Compiler {
@@ -115,6 +18,8 @@ impl Compiler {
         let source = source.chars().collect::<Vec<char>>();
         self.consume_source(&source);
         self.first_pass();
+        self.second_pass(&source);
+        self.hack(&source);
     }
 
     fn first_pass(&mut self) {
@@ -149,26 +54,45 @@ impl Compiler {
         }
         self.tokens = new_tokens;
     }
-
     fn second_pass(&mut self, source: &Vec<char>) {
+        // Capture all the used memory and instruction labels
         let mut current_line = 0;
         let mut new_tokens: Vec<Token> = Vec::new();
         let mut line_tokens: Vec<Token> = Vec::new();
-        for token in &self.tokens {
+        for token in self.tokens.clone() {
             line_tokens.push(token.clone());
             if let Token::NormalToken {
                 _type,
                 start: _,
                 length: _,
                 line: _,
-            } = token
+            } = &token
             {
                 match _type {
-                    TokenType::NewLine => {
-                        // Remove empty lines
-                    }
-                    TokenType::EOF => {
-                        new_tokens.append(&mut line_tokens);
+                    TokenType::NewLine | TokenType::EOF => {
+                        if let Token::NormalToken {
+                            _type,
+                            start: _,
+                            length: _,
+                            line: _,
+                        } = &line_tokens[0]
+                        {
+                            match _type {
+                                TokenType::LeftParam => {
+                                    self.instruction_label(source, &line_tokens, current_line);
+                                    line_tokens = Vec::new();
+                                }
+                                TokenType::At => {
+                                    self.potential_memory_label(source, &line_tokens);
+                                    new_tokens.append(&mut line_tokens);
+                                    current_line += 1;
+                                }
+                                _ => {
+                                    new_tokens.append(&mut line_tokens);
+                                    current_line += 1;
+                                }
+                            }
+                        }
                     }
                     _ => {
                         // Continue
@@ -176,6 +100,7 @@ impl Compiler {
                 }
             }
         }
+        self.tokens = new_tokens;
     }
 
     fn instruction_label(
@@ -186,7 +111,7 @@ impl Compiler {
     ) {
         // When passing control to this function, left paran and last EOL is already taken, we just need to parse the rest
         if line_tokens.len() != 4 {
-            self.error(
+            return self.error(
                 source,
                 line_tokens[0].clone(),
                 String::from("Expected instruction label"),
@@ -201,7 +126,7 @@ impl Compiler {
         {
             // Continue
         } else {
-            self.error(
+            return self.error(
                 source,
                 line_tokens[0].clone(),
                 String::from("Expected instruction label"),
@@ -225,46 +150,141 @@ impl Compiler {
             );
         }
     }
+    fn potential_memory_label(&mut self, source: &Vec<char>, line_tokens: &Vec<Token>) {
+        // When passing control to this function, we already consumed the first [TokenType::At]
+        // If there is an error with the memory label, we deal with it on the compilation step
+        if line_tokens.len() != 3 {
+            return self.error(
+                source,
+                line_tokens[0].clone(),
+                String::from("Expected memory label"),
+            );
+        }
 
-    // fn instruction(&self, source: &Vec<char>) {
-    //     // If this fails, something went wrong
-    //     assert!(self.tokens.len() > 0);
+        if let Token::NormalToken {
+            _type: TokenType::Label,
+            start: _,
+            length: _,
+            line: _,
+        } = line_tokens[1]
+        {
+            self.symbol_table
+                .insert_memory_label(source, &line_tokens[1]);
+        }
+        // Could still be a valid token, we only care about processing memory labels here
+    }
 
-    //     if let Token::NormalToken {
-    //         _type,
-    //         start,
-    //         length,
-    //         line,
-    //     } = self.tokens[0]
-    //     {
-    //         match _type {
-    //             TokenType::NewLine => {
-    //                 // Should just skip, empty newline
-    //                 return;
-    //             }
-    //             TokenType::EOF => {
-    //                 // IDK
-    //                 return;
-    //             }
-    //             TokenType::At => {
-    //                 return self.a_instruction(source);
-    //             }
-    //         }
-    //     } else {
-    //         // TODO: ErrorToken handling
-    //         return;
-    //     }
-    // }
-    // fn a_instruction(&mut self, source: &Vec<char>) {
-    //     if self.tokens.len() != 2 {
-    //         // Not a valid a_instruction, disregard
-    //         self.error(
-    //             source,
-    //             self.tokens[0].clone(),
-    //             String::from("Invalid A-Instruction"),
-    //         );
-    //     }
-    // }
+    /// Play on the hack langauge eh
+    fn hack(&mut self, source: &Vec<char>) {
+        let mut line_tokens: Vec<Token> = Vec::new();
+        for token in self.tokens.clone() {
+            line_tokens.push(token.clone());
+            if let Token::NormalToken {
+                _type,
+                start: _,
+                length: _,
+                line: _,
+            } = &token
+            {
+                match _type {
+                    TokenType::NewLine | TokenType::EOF => {
+                        if let Token::NormalToken {
+                            _type,
+                            start: _,
+                            length: _,
+                            line: _,
+                        } = &line_tokens[0]
+                        {
+                            match _type {
+                                TokenType::At => {
+                                    // A-instruction
+                                    self.a_instruction(source, &line_tokens);
+                                }
+                                _ => {
+                                    // Potential C-instruction
+                                }
+                            }
+                        }
+                    }
+                    _ => {
+                        // Continue
+                    }
+                }
+            }
+        }
+    }
+
+    fn a_instruction(&mut self, source: &Vec<char>, line_tokens: &Vec<Token>) {
+        if self.tokens.len() != 3 {
+            // Not a valid a_instruction, disregard
+            self.error(
+                source,
+                self.tokens[0].clone(),
+                String::from("Invalid A-Instruction"),
+            );
+        }
+
+        match self.symbol_table.get_symbol(source, &line_tokens[1]) {
+            Ok(value) => match Assembler::a_instruction(value) {
+                Err(msg) => self.error(source, line_tokens[1].clone(), msg),
+                Ok(rom_instruction) => self.rom.push(rom_instruction),
+            },
+            Err(msg) => self.error(source, line_tokens[1].clone(), msg),
+        }
+        // Error already handled and will be dealt later on
+    }
+    fn c_instruction(&mut self, source: &Vec<char>, line_tokens: &Vec<Token>) {
+        let mut contains_equal = false;
+        let mut contains_semi = false;
+        for token in line_tokens {
+            if let Token::NormalToken {
+                _type,
+                start: _,
+                length: _,
+                line: _,
+            } = token
+            {
+                match _type {
+                    TokenType::SemiColon => {
+                        if !contains_semi {
+                            contains_semi = true
+                        } else {
+                            return self.error(
+                                source,
+                                token.clone(),
+                                String::from("Expected only 1 semicolons"),
+                            );
+                        }
+                    }
+                    TokenType::Equal => {
+                        if !contains_equal {
+                            contains_equal = true;
+                        } else {
+                            return self.error(
+                                source,
+                                token.clone(),
+                                String::from("Expected only 1 equals"),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        let mut current_tokens: Vec<Token> = Vec::new();
+        for token in line_tokens {
+            current_tokens.push(token.clone());
+            if let Token::NormalToken {
+                _type,
+                start: _,
+                length: _,
+                line: _,
+            } = token
+            {
+                if contains_equal {}
+            }
+        }
+    }
 
     /// Consumes source to generate all tokens
     fn consume_source(&mut self, source: &Vec<char>) {
@@ -293,6 +313,7 @@ impl Compiler {
     }
 
     fn error(&mut self, source: &Vec<char>, token: Token, msg: String) {
+        // surpress all other errors except the first one
         if self.had_error {
             return;
         } else {
@@ -327,13 +348,27 @@ mod tests {
     #[test]
     fn test_first_pass_skip_empty_lines() {
         let source = "\n\n\n\n@";
+        let source = source.chars().collect::<Vec<char>>();
         let mut compiler = Compiler::new();
-        compiler.compile(source.to_string());
+        compiler.consume_source(&source);
+        compiler.first_pass();
         assert_eq!(compiler.tokens.len(), 2);
 
         let source = "\n\n@10\n\nM=A";
+        let source = source.chars().collect::<Vec<char>>();
         let mut compiler = Compiler::new();
-        compiler.compile(source.to_string());
+        compiler.consume_source(&source);
+        compiler.first_pass();
         assert_eq!(compiler.tokens.len(), 7);
+    }
+    #[test]
+    fn test_second_pass_instruction_label() {
+        let source = "@r1\n(LOOP)\n";
+        let source = source.chars().collect::<Vec<char>>();
+        let mut compiler = Compiler::new();
+        compiler.consume_source(&source);
+        compiler.first_pass();
+        compiler.second_pass(&source);
+        assert_eq!(compiler.tokens.len(), 4);
     }
 }
