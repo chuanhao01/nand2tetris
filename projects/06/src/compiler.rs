@@ -234,9 +234,9 @@ impl Compiler {
         // Error already handled and will be dealt later on
     }
     fn c_instruction(&mut self, source: &Vec<char>, line_tokens: &Vec<Token>) {
-        let mut contains_equal = false;
-        let mut contains_semi = false;
-        for token in line_tokens {
+        let mut contains_equal: Option<usize> = None;
+        let mut contains_semi: Option<usize> = None;
+        for (i, token) in line_tokens.iter().enumerate() {
             if let Token::NormalToken {
                 _type,
                 start: _,
@@ -245,45 +245,58 @@ impl Compiler {
             } = token
             {
                 match _type {
-                    TokenType::SemiColon => {
-                        if !contains_semi {
-                            contains_semi = true
-                        } else {
+                    TokenType::SemiColon => match contains_semi {
+                        None => contains_semi = Some(i),
+                        Some(v) => {
                             return self.error(
                                 source,
                                 token.clone(),
                                 String::from("Expected only 1 semicolons"),
-                            );
+                            )
                         }
-                    }
-                    TokenType::Equal => {
-                        if !contains_equal {
-                            contains_equal = true;
-                        } else {
+                    },
+                    TokenType::Equal => match contains_equal {
+                        None => contains_equal = Some(i),
+                        Some(v) => {
                             return self.error(
                                 source,
                                 token.clone(),
                                 String::from("Expected only 1 equals"),
-                            );
+                            )
                         }
-                    }
+                    },
                     _ => {}
                 }
             }
         }
-        let mut current_tokens: Vec<Token> = Vec::new();
-        for token in line_tokens {
-            current_tokens.push(token.clone());
-            if let Token::NormalToken {
-                _type,
-                start: _,
-                length: _,
-                line: _,
-            } = token
-            {
-                if contains_equal {}
+        let instruction = match (contains_equal, contains_semi) {
+            (None, None) => {
+                // Only Comp
+                let dest = Assembler::null_dest();
+                let jump = Assembler::null_jump();
+                let comp = match Assembler::comp(source, line_tokens) {
+                    Ok(instruction) => instruction,
+                    Err(msg) => return self.error(source, line_tokens[0].clone(), msg),
+                };
+                let mut instruction = ['0'; 16];
+                instruction[0..3].copy_from_slice(&['1'; 3]);
+                instruction[3..10].copy_from_slice(&comp);
+                instruction[10..13].copy_from_slice(&dest);
+                instruction[13..16].copy_from_slice(&jump);
+                instruction
             }
-        }
+            (Some(equal), None) => {
+                let jump = Assembler::null_jump();
+                let dest = match Assembler::dest(&line_tokens[0..equal].to_vec()) {
+                    Ok(instruction) => instruction,
+                    Err(msg) => return self.error(source, line_tokens[equal].clone(), msg),
+                };
+                // let comp = match
+                ['0'; 16]
+            }
+            // (Some(equal), Some(semi)) => if semi < equal {},
+            _ => ['0'; 16],
+        };
     }
 
     /// Consumes source to generate all tokens
@@ -370,5 +383,10 @@ mod tests {
         compiler.first_pass();
         compiler.second_pass(&source);
         assert_eq!(compiler.tokens.len(), 4);
+    }
+
+    #[test]
+    fn test_c_instruction_errors() {
+        // "=", ";", "=;", ";="
     }
 }

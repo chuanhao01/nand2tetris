@@ -4,6 +4,7 @@
 pub mod assembler;
 pub mod compiler;
 pub mod scanner;
+pub mod simple;
 pub mod symbol_table;
 pub mod tokens;
 

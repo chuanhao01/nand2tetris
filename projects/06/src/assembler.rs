@@ -364,6 +364,20 @@ impl Assembler {
             Ok(['0', '0', '0', '0', '0', '0', '0'])
         }
     }
+
+    pub fn dest(tokens: &Vec<Token>) -> Result<[char; 3], String> {
+        Ok(['0'; 3])
+    }
+    pub fn null_dest() -> [char; 3] {
+        // To be used when dest is not provided
+        ['0'; 3]
+    }
+    pub fn jump(tokens: &Vec<Token>) -> Result<[char; 3], String> {
+        Ok(['0'; 3])
+    }
+    pub fn null_jump() -> [char; 3] {
+        ['0'; 3]
+    }
 }
 
 #[cfg(test)]
@@ -390,6 +404,13 @@ mod tests {
             Assembler::a_instruction(32767),
             Ok(['0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',])
         );
+    }
+
+    #[test]
+    fn test_a_instruction_overflow() {
+        let overflow = Err(String::from("Overflow A-Instruction value"));
+        assert_eq!(Assembler::a_instruction(32768), overflow.clone());
+        assert_eq!(Assembler::a_instruction(usize::MAX), overflow.clone());
     }
 
     #[test]
@@ -440,12 +461,5 @@ mod tests {
             ),
             Ok(['0', '1', '1', '1', '0', '1', '0'])
         );
-    }
-
-    #[test]
-    fn test_a_instruction_overflow() {
-        let overflow = Err(String::from("Overflow A-Instruction value"));
-        assert_eq!(Assembler::a_instruction(32768), overflow.clone());
-        assert_eq!(Assembler::a_instruction(usize::MAX), overflow.clone());
     }
 }
