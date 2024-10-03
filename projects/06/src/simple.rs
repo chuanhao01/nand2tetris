@@ -111,6 +111,7 @@ impl Simple {
         let mut simple = Self::new(source);
         simple.remove_whtiespace();
         simple.first_pass();
+        simple.hack();
         if simple.had_error {
             None
         } else {
@@ -162,8 +163,20 @@ impl Simple {
             self.symbol_table
                 .get_or_insert_memory_label(label.iter().collect::<String>())
         } else {
-            0
+            match label.iter().collect::<String>().parse::<usize>() {
+                Ok(v) => v,
+                Err(_) => {
+                    return self.error(
+                        line_source.line,
+                        String::from("Invalid A-Instruction Decimal Value"),
+                    );
+                }
+            }
         };
+        match SimpleAssembler::a_instruction(value) {
+            Err(msg) => self.error(line_source.line, msg),
+            Ok(rom_instruction) => self.rom.push(rom_instruction),
+        }
     }
 
     fn add_instruction_label(&mut self, line_source: &LineSource, value: usize) {
@@ -353,6 +366,50 @@ mod tests {
                 assert!(!simple.had_error);
                 simple.add_instruction_label(&label, 1);
                 assert!(simple.had_error);
+            }
+        }
+
+        #[test]
+        fn invalid_a_instruction() {
+            let sources = vec!["no", "@", "@-10", "@3333333333", "@3.3"];
+            let sources = sources
+                .iter()
+                .map(|s| LineSource::new(s.to_string(), 1))
+                .collect::<Vec<LineSource>>();
+            for source in sources {
+                let mut simple = Simple::default();
+                assert!(!simple.had_error);
+                simple.a_instruction(&source);
+                assert!(simple.had_error);
+            }
+        }
+        #[test]
+        fn valid_a_instruction() {
+            let sources = vec!["@1", "@32000", "@f1", "@R1", "@KBD", "@SCREEN"];
+            let correct_rom_instructions = vec![
+                "0000000000000001",
+                "0111110100000000",
+                "0000000000010000",
+                "0000000000000001",
+                "0110000000000000",
+                "0100000000000000",
+            ]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+            let sources = sources
+                .iter()
+                .map(|s| LineSource::new(s.to_string(), 1))
+                .collect::<Vec<LineSource>>();
+            for (source, correct_rom_instruction) in
+                sources.iter().zip(correct_rom_instructions.iter())
+            {
+                let mut simple = Simple::default();
+                simple.a_instruction(&source);
+                assert_eq!(
+                    simple.rom[0].iter().collect::<String>(),
+                    correct_rom_instruction.to_owned()
+                );
             }
         }
     }
