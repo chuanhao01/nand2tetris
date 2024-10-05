@@ -26,8 +26,8 @@ impl SimpleAssembler {
             .unwrap();
         Ok(instruction)
     }
-    fn dest(field: &String) -> Result<[char; 3], String> {
-        match field.as_str() {
+    fn dest(field: &str) -> Result<[char; 3], String> {
+        match field {
             "null" => Ok(['0'; 3]),
             "M" => Ok(['0', '0', '1']),
             "D" => Ok(['0', '1', '0']),
@@ -39,8 +39,8 @@ impl SimpleAssembler {
             _ => Err(String::from("Invalid dest field")),
         }
     }
-    fn jump(field: &String) -> Result<[char; 3], String> {
-        match field.as_str() {
+    fn jump(field: &str) -> Result<[char; 3], String> {
+        match field {
             "null" => Ok(['0'; 3]),
             "JGT" => Ok(['0', '0', '1']),
             "JEQ" => Ok(['0', '1', '0']),
@@ -52,8 +52,8 @@ impl SimpleAssembler {
             _ => Err(String::from("Invalid jump field")),
         }
     }
-    fn comp(field: &String) -> Result<[char; 7], String> {
-        match field.as_str() {
+    fn comp(field: &str) -> Result<[char; 7], String> {
+        match field {
             "0" => Ok(['0', '1', '0', '1', '0', '1', '0']),
             "1" => Ok(['0', '1', '1', '1', '1', '1', '1']),
             "-1" => Ok(['0', '1', '1', '1', '0', '1', '0']),
@@ -197,7 +197,7 @@ impl Simple {
 
     fn hack(&mut self) {
         for line_source in self.line_sources.clone() {
-            if line_source.source.starts_with("@") {
+            if line_source.source.starts_with('@') {
                 // A-Instruction
                 self.a_instruction(&line_source);
             } else {
@@ -208,13 +208,13 @@ impl Simple {
     }
 
     fn a_instruction(&mut self, line_source: &LineSource) {
-        let source = match line_source.source.strip_prefix("@") {
+        let source = match line_source.source.strip_prefix('@') {
             Some(s) => s,
             None => {
                 return self.error(line_source.line, String::from("Invalid A-Instruction"));
             }
         };
-        if source.len() == 0 {
+        if source.is_empty() {
             // Empty @ instruction
             return self.error(line_source.line, String::from("Empty A-Instruction"));
         }
@@ -247,28 +247,28 @@ impl Simple {
         let comp: String;
         let mut jump = null.clone();
 
-        if source.contains("=") {
-            let s = source.split_once("=").unwrap();
+        if source.contains('=') {
+            let s = source.split_once('=').unwrap();
             dest = s.0.to_string();
             source = s.1.to_string();
         }
-        if source.contains(";") {
-            let s = source.split_once(";").unwrap();
+        if source.contains(';') {
+            let s = source.split_once(';').unwrap();
             comp = s.0.to_string();
             jump = s.1.to_string();
         } else {
             comp = source;
         }
 
-        let dest_instruction = match SimpleAssembler::dest(&dest.trim().to_string()) {
+        let dest_instruction = match SimpleAssembler::dest(dest.trim()) {
             Ok(v) => v,
             Err(msg) => return self.error(line_source.line, msg),
         };
-        let comp_instruction = match SimpleAssembler::comp(&comp.trim().to_string()) {
+        let comp_instruction = match SimpleAssembler::comp(comp.trim()) {
             Ok(v) => v,
             Err(msg) => return self.error(line_source.line, msg),
         };
-        let jump_instruction = match SimpleAssembler::jump(&jump.trim().to_string()) {
+        let jump_instruction = match SimpleAssembler::jump(jump.trim()) {
             Ok(v) => v,
             Err(msg) => return self.error(line_source.line, msg),
         };
@@ -281,13 +281,13 @@ impl Simple {
 
     fn add_instruction_label(&mut self, line_source: &LineSource, value: usize) {
         let invalid_instruction_msg = String::from("Not a valid instruction label");
-        let mut source = match line_source.source.strip_prefix("(") {
+        let mut source = match line_source.source.strip_prefix('(') {
             Some(s) => s,
             None => {
                 return self.error(line_source.line, invalid_instruction_msg);
             }
         };
-        source = match source.strip_suffix(")") {
+        source = match source.strip_suffix(')') {
             Some(s) => s,
             None => {
                 return self.error(line_source.line, invalid_instruction_msg);
@@ -307,7 +307,7 @@ impl Simple {
     }
 
     fn is_valid_label(label: &Vec<char>) -> bool {
-        if label.len() == 0 {
+        if label.is_empty() {
             return false;
         }
         if !(label[0].is_ascii_alphabetic()
@@ -429,7 +429,7 @@ mod tests {
 
         #[test]
         fn valid_add_instruction_label() {
-            let labels = vec![
+            let labels = [
                 "(valid)", "(VALID)", "(.)", "($)", "(_)", "(:)", "(v2l1d)", "(_wow)",
             ];
             let labels = labels
@@ -442,9 +442,9 @@ mod tests {
                 assert!(!simple.had_error);
                 let actual_label = label
                     .source
-                    .strip_prefix("(")
+                    .strip_prefix('(')
                     .unwrap()
-                    .strip_suffix(")")
+                    .strip_suffix(')')
                     .unwrap();
                 assert_eq!(
                     simple
@@ -456,7 +456,7 @@ mod tests {
         }
         #[test]
         fn invalid_add_instruction_label() {
-            let labels = vec!["a(valid)", "(VALID).", "(1abv)", "abc", "@no", "()"];
+            let labels = ["a(valid)", "(VALID).", "(1abv)", "abc", "@no", "()"];
             let labels = labels
                 .iter()
                 .map(|s| LineSource::new(s.to_string(), 1))
@@ -471,7 +471,7 @@ mod tests {
 
         #[test]
         fn invalid_a_instruction() {
-            let sources = vec!["no", "@", "@-10", "@3333333333", "@3.3"];
+            let sources = ["no", "@", "@-10", "@3333333333", "@3.3"];
             let sources = sources
                 .iter()
                 .map(|s| LineSource::new(s.to_string(), 1))
@@ -485,8 +485,8 @@ mod tests {
         }
         #[test]
         fn valid_a_instruction() {
-            let sources = vec!["@1", "@32000", "@f1", "@R1", "@KBD", "@SCREEN"];
-            let correct_rom_instructions = vec![
+            let sources = ["@1", "@32000", "@f1", "@R1", "@KBD", "@SCREEN"];
+            let correct_rom_instructions = [
                 "0000000000000001",
                 "0111110100000000",
                 "0000000000010000",
@@ -525,19 +525,17 @@ mod tests {
                 symbol_table.insert_instruction_label(label.clone(), 1),
                 Ok(())
             );
-            assert!(matches!(
-                symbol_table.insert_instruction_label(label.clone(), 2),
-                Err(_)
-            ))
+            assert!(symbol_table
+                .insert_instruction_label(label.clone(), 2)
+                .is_err())
         }
         #[test]
         fn insert_reserved_instruction() {
             let mut symbol_table = SimpleSymbolTable::new();
             let label = String::from("R0");
-            assert!(matches!(
-                symbol_table.insert_instruction_label(label.clone(), 2),
-                Err(_)
-            ))
+            assert!(symbol_table
+                .insert_instruction_label(label.clone(), 2)
+                .is_err())
         }
         #[test]
         fn get_reserved_instruction() {
