@@ -273,9 +273,9 @@ impl Simple {
             Err(msg) => return self.error(line_source.line, msg),
         };
         let mut instruction = ['1'; 16];
-        instruction[0..3].copy_from_slice(&jump_instruction);
-        instruction[3..6].copy_from_slice(&dest_instruction);
-        instruction[6..13].copy_from_slice(&comp_instruction);
+        instruction[13..16].copy_from_slice(&jump_instruction);
+        instruction[10..13].copy_from_slice(&dest_instruction);
+        instruction[3..10].copy_from_slice(&comp_instruction);
         self.rom.push(instruction);
     }
 
