@@ -26,6 +26,65 @@ impl SimpleAssembler {
             .unwrap();
         Ok(instruction)
     }
+    fn dest(field: &String) -> Result<[char; 3], String> {
+        match field.as_str() {
+            "null" => Ok(['0'; 3]),
+            "M" => Ok(['0', '0', '1']),
+            "D" => Ok(['0', '1', '0']),
+            "MD" => Ok(['0', '1', '1']),
+            "A" => Ok(['1', '0', '0']),
+            "AM" => Ok(['1', '0', '1']),
+            "AD" => Ok(['1', '1', '0']),
+            "AMD" => Ok(['1'; 3]),
+            _ => Err(String::from("Invalid dest field")),
+        }
+    }
+    fn jump(field: &String) -> Result<[char; 3], String> {
+        match field.as_str() {
+            "null" => Ok(['0'; 3]),
+            "JGT" => Ok(['0', '0', '1']),
+            "JEQ" => Ok(['0', '1', '0']),
+            "JGE" => Ok(['0', '1', '1']),
+            "JLT" => Ok(['1', '0', '0']),
+            "JNE" => Ok(['1', '0', '1']),
+            "JLE" => Ok(['1', '1', '0']),
+            "JMP" => Ok(['1'; 3]),
+            _ => Err(String::from("Invalid jump field")),
+        }
+    }
+    fn comp(field: &String) -> Result<[char; 7], String> {
+        match field.as_str() {
+            "0" => Ok(['0', '1', '0', '1', '0', '1', '0']),
+            "1" => Ok(['0', '1', '1', '1', '1', '1', '1']),
+            "-1" => Ok(['0', '1', '1', '1', '0', '1', '0']),
+            "D" => Ok(['0', '0', '0', '1', '1', '0', '0']),
+            "A" => Ok(['0', '1', '1', '0', '0', '0', '0']),
+            "M" => Ok(['1', '1', '1', '0', '0', '0', '0']),
+            "!D" => Ok(['0', '0', '0', '1', '1', '0', '1']),
+            "!A" => Ok(['0', '1', '1', '0', '0', '0', '1']),
+            "!M" => Ok(['1', '1', '1', '0', '0', '0', '1']),
+            "-D" => Ok(['0', '0', '0', '1', '1', '1', '1']),
+            "-A" => Ok(['0', '1', '1', '0', '0', '1', '1']),
+            "-M" => Ok(['1', '1', '1', '0', '0', '1', '1']),
+            "D+1" => Ok(['0', '0', '1', '1', '1', '1', '1']),
+            "A+1" => Ok(['0', '1', '1', '0', '1', '1', '1']),
+            "M+1" => Ok(['1', '1', '1', '0', '1', '1', '1']),
+            "D-1" => Ok(['0', '0', '0', '1', '1', '1', '0']),
+            "A-1" => Ok(['0', '1', '1', '0', '0', '1', '0']),
+            "M-1" => Ok(['1', '1', '1', '0', '0', '1', '0']),
+            "D+A" => Ok(['0', '0', '0', '0', '0', '1', '0']),
+            "D+M" => Ok(['1', '0', '0', '0', '0', '1', '0']),
+            "D-A" => Ok(['0', '0', '1', '0', '0', '1', '1']),
+            "D-M" => Ok(['1', '0', '1', '0', '0', '1', '1']),
+            "A-D" => Ok(['0', '0', '0', '0', '1', '1', '1']),
+            "M-D" => Ok(['1', '0', '0', '0', '1', '1', '1']),
+            "D&A" => Ok(['0', '0', '0', '0', '0', '0', '0']),
+            "D&M" => Ok(['1', '0', '0', '0', '0', '0', '0']),
+            "D|A" => Ok(['0', '0', '1', '0', '1', '0', '1']),
+            "D|M" => Ok(['1', '0', '1', '0', '1', '0', '1']),
+            _ => Err(String::from("Invalid comp field")),
+        }
+    }
 }
 
 struct SimpleSymbolTable {
@@ -143,6 +202,7 @@ impl Simple {
                 self.a_instruction(&line_source);
             } else {
                 // C-Instruction
+                self.c_instruction(&line_source);
             }
         }
     }
@@ -177,6 +237,46 @@ impl Simple {
             Err(msg) => self.error(line_source.line, msg),
             Ok(rom_instruction) => self.rom.push(rom_instruction),
         }
+    }
+
+    fn c_instruction(&mut self, line_source: &LineSource) {
+        let mut source = line_source.source.clone();
+        let null = String::from("null");
+
+        let mut dest = null.clone();
+        let comp: String;
+        let mut jump = null.clone();
+
+        if source.contains("=") {
+            let s = source.split_once("=").unwrap();
+            dest = s.0.to_string();
+            source = s.1.to_string();
+        }
+        if source.contains(";") {
+            let s = source.split_once(";").unwrap();
+            comp = s.0.to_string();
+            jump = s.1.to_string();
+        } else {
+            comp = source;
+        }
+
+        let dest_instruction = match SimpleAssembler::dest(&dest.trim().to_string()) {
+            Ok(v) => v,
+            Err(msg) => return self.error(line_source.line, msg),
+        };
+        let comp_instruction = match SimpleAssembler::comp(&comp.trim().to_string()) {
+            Ok(v) => v,
+            Err(msg) => return self.error(line_source.line, msg),
+        };
+        let jump_instruction = match SimpleAssembler::jump(&jump.trim().to_string()) {
+            Ok(v) => v,
+            Err(msg) => return self.error(line_source.line, msg),
+        };
+        let mut instruction = ['1'; 16];
+        instruction[0..3].copy_from_slice(&jump_instruction);
+        instruction[3..6].copy_from_slice(&dest_instruction);
+        instruction[6..13].copy_from_slice(&comp_instruction);
+        self.rom.push(instruction);
     }
 
     fn add_instruction_label(&mut self, line_source: &LineSource, value: usize) {

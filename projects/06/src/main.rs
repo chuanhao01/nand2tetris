@@ -1,6 +1,6 @@
 use std::{env, fs, path::Path};
 
-use rust_asm2hack::{scanner::Scanner, Token, TokenType};
+use rust_asm2hack::{scanner::Scanner, simple::Simple, Token, TokenType};
 
 type ProgResult = Result<(), String>;
 
@@ -24,28 +24,49 @@ fn compile_file(file_path: &str) -> ProgResult {
         }
     }
     let source = fs::read_to_string(file_path).expect("Read have read the file contents");
-    let s = source.chars().collect::<Vec<char>>();
-    let mut scanner = Scanner::new();
-    let mut tokens: Vec<Token> = Vec::new();
-    loop {
-        let token = scanner.scan_token(&s);
-        let t = if let Token::NormalToken {
-            _type,
-            start: _,
-            length: _,
-            line: _,
-        } = &token
-        {
-            matches!(_type, TokenType::EOF)
-        } else {
-            false
-        };
-        tokens.push(token);
-        if t {
-            break;
-        }
-    }
-    println!("{:?}", tokens);
+    let output = Simple::compile(source).unwrap();
+    println!(
+        "{:?}",
+        output
+            .iter()
+            .map(|s| s.iter().collect::<String>())
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
+    fs::write(
+        format!(
+            "outputs/{}.hack",
+            file_path.file_name().unwrap().to_str().unwrap()
+        ),
+        output
+            .iter()
+            .map(|s| s.iter().collect::<String>())
+            .collect::<Vec<String>>()
+            .join("\n"),
+    );
+
+    // let s = source.chars().collect::<Vec<char>>();
+    // let mut scanner = Scanner::new();
+    // let mut tokens: Vec<Token> = Vec::new();
+    // loop {
+    //     let token = scanner.scan_token(&s);
+    //     let t = if let Token::NormalToken {
+    //         _type,
+    //         start: _,
+    //         length: _,
+    //         line: _,
+    //     } = &token
+    //     {
+    //         matches!(_type, TokenType::EOF)
+    //     } else {
+    //         false
+    //     };
+    //     tokens.push(token);
+    //     if t {
+    //         break;
+    //     }
+    // }
+    // println!("{:?}", tokens);
 
     Ok(())
 }
