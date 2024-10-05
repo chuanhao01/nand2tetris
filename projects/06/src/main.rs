@@ -1,6 +1,6 @@
 use std::{env, fs, path::Path};
 
-use rust_asm2hack::{scanner::Scanner, simple::Simple, Token, TokenType};
+use rust_asm2hack::simple::Simple;
 
 type ProgResult = Result<(), String>;
 
@@ -24,26 +24,26 @@ fn compile_file(file_path: &str) -> ProgResult {
         }
     }
     let source = fs::read_to_string(file_path).expect("Read have read the file contents");
-    let output = Simple::compile(source).unwrap();
-    println!(
-        "{:?}",
-        output
-            .iter()
-            .map(|s| s.iter().collect::<String>())
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
-    fs::write(
-        format!(
-            "outputs/{}.hack",
-            file_path.file_name().unwrap().to_str().unwrap()
-        ),
-        output
-            .iter()
-            .map(|s| s.iter().collect::<String>())
-            .collect::<Vec<String>>()
-            .join("\n"),
-    );
+    match Simple::compile(source) {
+        Some(assembly) => {
+            // Write file to ouputs
+            let output_dir = Path::new("./outputs");
+            fs::create_dir_all(output_dir).map_err(|e| e.to_string())?;
+            let mut output_file =
+                output_dir.join(file_path.file_stem().expect("Should have a file stem"));
+            output_file.set_extension("hack");
+            fs::write(
+                output_file,
+                assembly
+                    .iter()
+                    .map(|line| line.iter().collect::<String>())
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+            )
+            .map_err(|e| e.to_string())?
+        }
+        None => return Err(String::from("Failed to compile")),
+    };
 
     // let s = source.chars().collect::<Vec<char>>();
     // let mut scanner = Scanner::new();
