@@ -318,13 +318,8 @@ impl Simple {
         {
             return false;
         }
-        for i in 1..label.len() {
-            if !(label[i].is_ascii_alphanumeric()
-                || label[0] == '_'
-                || label[0] == '.'
-                || label[0] == '$'
-                || label[0] == ':')
-            {
+        for c in &label[1..label.len()] {
+            if !(c.is_ascii_alphanumeric() || c == &'_' || c == &'.' || c == &'$' || c == &':') {
                 return false;
             }
         }
@@ -339,7 +334,7 @@ impl Simple {
         } else {
             self.had_error = true;
         }
-        println!("Error on line {}: {}", line, msg)
+        println!("Error on line {}: {}", line + 1, msg)
     }
 
     fn remove_whtiespace(&mut self) {
@@ -402,7 +397,7 @@ mod tests {
 
         #[test]
         fn valid_labels() {
-            let labels = vec!["_", ".", "$", ":", "a2", ".2"];
+            let labels = vec!["_", ".", "$", ":", "a2", ".2", "DRAW_REACT", "wow"];
             let labels = labels
                 .into_iter()
                 .map(|s| s.to_string())
@@ -430,7 +425,15 @@ mod tests {
         #[test]
         fn valid_add_instruction_label() {
             let labels = [
-                "(valid)", "(VALID)", "(.)", "($)", "(_)", "(:)", "(v2l1d)", "(_wow)",
+                "(valid)",
+                "(VALID)",
+                "(.)",
+                "($)",
+                "(_)",
+                "(:)",
+                "(v2l1d)",
+                "(_wow)",
+                "(DRAW_REACT)",
             ];
             let labels = labels
                 .iter()
@@ -505,7 +508,7 @@ mod tests {
                 sources.iter().zip(correct_rom_instructions.iter())
             {
                 let mut simple = Simple::default();
-                simple.a_instruction(&source);
+                simple.a_instruction(source);
                 assert_eq!(
                     simple.rom[0].iter().collect::<String>(),
                     correct_rom_instruction.to_owned()
