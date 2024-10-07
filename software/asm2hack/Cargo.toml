@@ -1,5 +1,5 @@
 [package]
-name = "hack2bin"
+name = "asm2hack"
 version = "0.1.0"
 edition = "2021"
 

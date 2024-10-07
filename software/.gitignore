@@ -1,5 +1,5 @@
 # For hack and vm output code
-hack/outputs
+asm/outputs
 vm/outputs
 
 *.ppm

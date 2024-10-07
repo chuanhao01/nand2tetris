@@ -1,6 +1,6 @@
 use std::{env, fs, path::Path};
 
-use hack2bin::simple::Simple;
+use asm2hack::simple::Simple;
 
 type ProgResult = Result<(), String>;
 
