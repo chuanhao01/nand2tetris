@@ -1,9 +1,3 @@
-# Editor Configs
-.vscode
-
-# Ensure .additional folder is added
-!.additional/**/*
-
 # For hack and vm output code
 hack/outputs
 vm/outputs
