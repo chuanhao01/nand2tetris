@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = ["vm2hack", "asm2hack"]
+members = ["vm2asm", "asm2hack"]
