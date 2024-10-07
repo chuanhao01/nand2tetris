@@ -23,7 +23,6 @@ that
 pointer - pointer 0 is THIS
 pointer 1 is THAT
 
-
 temp - RAM 5 - 12
 
 constant - virtual
@@ -47,8 +46,25 @@ SP++
 Static
 ```
 push static i
+
+*SP = *FileName.i
+SP++
 ```
 
 ```
+pop static i
 
+SP--
+*FileName.i = *SP
 ```
+
+Temp
+```
+push temp i
+
+*SP = *RAM[5+i]
+SP++
+```
+
+
+
