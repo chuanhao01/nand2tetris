@@ -1,0 +1,212 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'rust-simple-raytracer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "rust-simple-raytracer",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'rust-simple-raytracer'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rust-simple-raytracer",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "rust-simple-raytracer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'rust-simple-raytracer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=rust-simple-raytracer",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "rust-simple-raytracer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'simple-test-render-vec'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=simple-test-render-vec",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "simple-test-render-vec",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'simple-test-render-vec'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=simple-test-render-vec",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "simple-test-render-vec",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'debug-main'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=debug-main",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "debug-main",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'debug-main'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=debug-main",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "debug-main",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'weekend-final-render'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=weekend-final-render",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "weekend-final-render",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'weekend-final-render'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=weekend-final-render",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "weekend-final-render",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'simple-test-render'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=simple-test-render",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "simple-test-render",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'simple-test-render'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=simple-test-render",
+                    "--package=rust-simple-raytracer"
+                ],
+                "filter": {
+                    "name": "simple-test-render",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
