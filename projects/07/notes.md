@@ -62,3 +62,19 @@ A=M+1
 A=M
 M=D
 ```
+
+The overflow problem when doing *SP + (LCL+i) is fine since we are using 2's compliment
+So when we do *SP + (LCL+i) - *SP we get (LCL+i) and vice versa
+
+@SP
+AM=M-1 // SP-- & *SP
+D=M // D = *SP
+@LCL
+D=D+M // D = *SP + LCL
+@i
+D=D+A // D = *SP + (LCL+i)
+@SP
+A=M // *SP
+A=M // A = *SP
+A=D-A // A = *SP + (LCL+i) - *SP, *(LCL+i)
+M=D-A // *(LCL+i) = *SP + (LCL+i) - (LCL+i)
