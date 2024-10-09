@@ -3,23 +3,29 @@ use crate::{code_gen::CodeGen, LineSource, Parser};
 pub struct Compiler {
     line_sources: Vec<LineSource>,
     asm: Vec<String>, // Output of compiled asm
+    file_name: String,
     had_error: bool,
 }
 
 impl Compiler {
-    fn new(source: String) -> Self {
+    fn new(source: String, file_name: String) -> Self {
         let line_sources = Parser::parse(source);
         Self {
             asm: Vec::default(),
             line_sources,
-            // symbol_table: SimpleSymbolTable::new(),
+            file_name,
             had_error: false,
         }
     }
 
-    pub fn compile(source: String) -> Option<Vec<String>> {
-        let mut compiler = Self::new(source);
-        Some(Vec::default())
+    pub fn compile(source: String, file_name: String) -> Option<Vec<String>> {
+        let mut compiler = Self::new(source, file_name);
+        compiler.run();
+        if compiler.had_error {
+            None
+        } else {
+            Some(compiler.asm)
+        }
     }
 
     pub fn run(&mut self) {
@@ -68,12 +74,11 @@ impl Compiler {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
-    fn custom() {
-        let source = String::from("add");
-        let mut compiler = Compiler::new(source);
+    fn error_quad_token() {
+        let source = "wow very funny lol";
+        let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
         compiler.run();
-        assert_eq!(compiler.asm[0], String::from("//add"));
+        assert!(compiler.had_error)
     }
 }
