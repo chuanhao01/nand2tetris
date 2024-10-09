@@ -1,5 +1,34 @@
 # Wow
 
+Everything I need to implement for part 1
+
+Also everything can be found in `software/vm2asm`
+
+```
+add
+sub
+neg
+eq
+gt
+lt
+and
+or
+not
+
+pop segment i
+push segment i
+
+label label
+goto label
+if-goto label
+
+function functionName nvars
+call functionname nargs
+return
+```
+
+Compiler will be based on first kw
+
 ## Commands
 
 The VM represents true and false as -1 (minus one, 0xFFFF ) and 0 (zero, 0x0000),
