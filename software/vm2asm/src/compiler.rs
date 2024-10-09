@@ -1,4 +1,4 @@
-use crate::{code_gen::CodeGen, LineSource, Parser};
+use crate::{CodeGen, LineSource, MemorySegments, Parser};
 
 pub struct Compiler {
     line_sources: Vec<LineSource>,
@@ -33,6 +33,7 @@ impl Compiler {
             let tokens = &line_source.tokens;
             match tokens.len() {
                 1 => self.single_command(&line_source),
+                3 => self.triple_command(&line_source),
                 _ => self.error(
                     line_source.line,
                     String::from("Unknown token length for command"),
@@ -55,8 +56,45 @@ impl Compiler {
             "or" => {}
             "not" => {}
             "return" => self.error(line_source.line, String::from("Not Implemented yet")), // Not implemented yet
-            _ => self.error(line_source.line, format!("Unknown command, {}", command)),
+            _ => self.error(
+                line_source.line,
+                format!("Unknown single command, {}", command),
+            ),
         }
+    }
+    fn triple_command(&mut self, line_source: &LineSource) {
+        assert!(line_source.tokens.len() == 3);
+        let command = &line_source.tokens[0];
+        match command.as_str() {
+            "pop" => self.pop_segment(line_source),
+            "push" => self.push_segment(line_source),
+            _ => self.error(
+                line_source.line,
+                format!("Unknown triple command, starting from {}", command),
+            ),
+        }
+    }
+    fn pop_segment(&mut self, line_source: &LineSource) {}
+    fn push_segment(&mut self, line_source: &LineSource) {
+        assert!(line_source.tokens.len() == 3);
+        let memory_segment = match MemorySegments::from_token(line_source.tokens[1].as_str()) {
+            Ok(memory_segment) => memory_segment,
+            Err(msg) => return self.error(line_source.line, msg),
+        };
+        let i = match line_source.tokens[2].parse::<usize>() {
+            Ok(i) => i,
+            Err(_) => {
+                return self.error(
+                    line_source.line,
+                    format!("Unknown i at {}", line_source.tokens[2]),
+                )
+            }
+        };
+        self.asm.append(&mut CodeGen::push_segment(
+            &self.file_name,
+            memory_segment,
+            i,
+        ));
     }
 
     fn error(&mut self, line: usize, msg: String) {

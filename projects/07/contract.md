@@ -253,6 +253,11 @@ SP++
 ```
 
 ### Push
+@i
+D=A
+@LCL
+A=D+M
+
 
 @LCL
 D=M

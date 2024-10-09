@@ -12,19 +12,27 @@ fn compile_file(file_path: &str) -> ProgResult {
     }
     match file_path.extension() {
         Some(extension) => {
-            if extension != "asm" {
-                return Err(String::from("File does not end with a .asm extension"));
+            if extension != "vm" {
+                return Err(String::from("File does not end with a .vm extension"));
             }
         }
         None => {
             return Err(format!(
-                "Expected file, {}, to have .asm extension",
+                "Expected file, {}, to have .vm extension",
                 file_path.file_name().unwrap().to_str().unwrap(),
             ))
         }
     }
     let source = fs::read_to_string(file_path).expect("Read the file contents");
-    match Compiler::compile(source) {
+    match Compiler::compile(
+        source,
+        file_path
+            .file_stem()
+            .expect("Should have a file stem")
+            .to_str()
+            .unwrap()
+            .to_string(),
+    ) {
         Some(assembly) => {
             // Write file to ouputs
             let output_dir = file_path
@@ -36,7 +44,7 @@ fn compile_file(file_path: &str) -> ProgResult {
             fs::create_dir_all(output_dir.clone()).map_err(|e| e.to_string())?;
             let mut output_file =
                 output_dir.join(file_path.file_stem().expect("Should have a file stem"));
-            output_file.set_extension("hack");
+            output_file.set_extension("asm");
             fs::write(output_file, assembly.join("\n")).map_err(|e| e.to_string())?
         }
         None => return Err(String::from("Failed to compile")),

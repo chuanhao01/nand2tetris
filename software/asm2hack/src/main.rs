@@ -25,7 +25,7 @@ fn compile_file(file_path: &str) -> ProgResult {
     }
     let source = fs::read_to_string(file_path).expect("Read have read the file contents");
     match Simple::compile(source) {
-        Some(assembly) => {
+        Some(rom) => {
             // Write file to ouputs
             let output_dir = file_path
                 .parent()
@@ -39,8 +39,7 @@ fn compile_file(file_path: &str) -> ProgResult {
             output_file.set_extension("hack");
             fs::write(
                 output_file,
-                assembly
-                    .iter()
+                rom.iter()
                     .map(|line| line.iter().collect::<String>())
                     .collect::<Vec<String>>()
                     .join("\n"),

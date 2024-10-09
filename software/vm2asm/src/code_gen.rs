@@ -1,7 +1,54 @@
-pub struct CodeGen;
-
 const SP: &str = "@SP";
 
+#[derive(Debug)]
+pub enum MemorySegments {
+    Local,
+    Argument,
+    This,
+    That,
+    Pointer,
+    Temp,
+    Constant,
+    Static,
+}
+impl MemorySegments {
+    pub fn from_token(token: &str) -> Result<Self, String> {
+        match token {
+            "local" => Ok(Self::Local),
+            "argument" => Ok(Self::Argument),
+            "this" => Ok(Self::This),
+            "that" => Ok(Self::That),
+            "pointer" => Ok(Self::Pointer),
+            "temp" => Ok(Self::Temp),
+            "constant" => Ok(Self::Constant),
+            "static" => Ok(Self::Static),
+            _ => Err(String::from("Unknown Memory Segment")),
+        }
+    }
+    fn to_token(&self) -> String {
+        match self {
+            MemorySegments::Local => String::from("local"),
+            MemorySegments::Argument => String::from("argument"),
+            MemorySegments::This => String::from("this"),
+            MemorySegments::That => String::from("that"),
+            MemorySegments::Pointer => String::from("pointer"),
+            MemorySegments::Temp => String::from("temp"),
+            MemorySegments::Constant => String::from("constant"),
+            MemorySegments::Static => String::from("static"),
+        }
+    }
+    fn to_asm(&self) -> String {
+        match self {
+            MemorySegments::Local => String::from("LCL"),
+            MemorySegments::Argument => String::from("ARG"),
+            MemorySegments::This => String::from("THIS"),
+            MemorySegments::That => String::from("That"),
+            _ => panic!("Tried to_asm an unkown memory_segment, {:?}", self),
+        }
+    }
+}
+
+pub struct CodeGen;
 impl CodeGen {
     pub fn add() -> Vec<String> {
         let mut asm = vec![String::from("//add")];
@@ -25,7 +72,6 @@ impl CodeGen {
             String::from("M=-M // *SP-- = -*SP--"),
         ]
     }
-
     fn sp_minus_1_load_d() -> Vec<String> {
         vec![
             SP.to_string(),
@@ -35,6 +81,38 @@ impl CodeGen {
     }
     fn sp_a_m_minus_1() -> Vec<String> {
         vec![SP.to_string(), String::from("A=M-1")]
+    }
+
+    pub fn push_segment(
+        file_name: &String,
+        memory_segment: MemorySegments,
+        i: usize,
+    ) -> Vec<String> {
+        let mut asm = vec![format!("//push {} {}", memory_segment.to_token(), i)];
+        match memory_segment {
+            MemorySegments::Local
+            | MemorySegments::Argument
+            | MemorySegments::That
+            | MemorySegments::This => {
+                asm.append(&mut vec![
+                    format!("@{}", memory_segment.to_asm()),
+                    String::from("D=M"),
+                    format!("@{}", i),
+                    String::from("A=D+A"),
+                    format!("D=M // D = *({}+{})", memory_segment.to_asm(), i),
+                    SP.to_string(),
+                    String::from("A=M"),
+                    String::from("M=D // *SP = D"),
+                    SP.to_string(),
+                    String::from("M=M+1 // SP++"),
+                ]);
+            }
+            MemorySegments::Constant => {
+                asm.append(&mut vec![]);
+            }
+            _ => {}
+        };
+        asm
     }
 }
 
@@ -66,5 +144,12 @@ mod tests {
     #[test]
     fn neg() {
         assert_eq!(CodeGen::neg(), load_asm_file_to_vec("neg.asm"));
+    }
+    #[test]
+    fn push_local_3() {
+        assert_eq!(
+            CodeGen::push_segment(&String::from("f"), MemorySegments::Local, 3),
+            load_asm_file_to_vec("push_local_3.asm")
+        );
     }
 }
