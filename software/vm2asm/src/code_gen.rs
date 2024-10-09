@@ -17,6 +17,14 @@ impl CodeGen {
         asm.push(String::from("M=M-D // *SP-- = *SP-- + D, *SP-- = X - Y"));
         asm
     }
+    pub fn neg() -> Vec<String> {
+        vec![
+            String::from("//neg"),
+            SP.to_string(),
+            String::from("A=M-1"),
+            String::from("M=-M // *SP-- = -*SP--"),
+        ]
+    }
 
     fn sp_minus_1_load_d() -> Vec<String> {
         vec![
@@ -51,9 +59,12 @@ mod tests {
     fn add() {
         assert_eq!(CodeGen::add(), load_asm_file_to_vec("add.asm"));
     }
-
     #[test]
     fn sub() {
         assert_eq!(CodeGen::sub(), load_asm_file_to_vec("sub.asm"));
+    }
+    #[test]
+    fn neg() {
+        assert_eq!(CodeGen::neg(), load_asm_file_to_vec("neg.asm"));
     }
 }
