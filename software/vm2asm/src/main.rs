@@ -37,15 +37,7 @@ fn compile_file(file_path: &str) -> ProgResult {
             let mut output_file =
                 output_dir.join(file_path.file_stem().expect("Should have a file stem"));
             output_file.set_extension("hack");
-            fs::write(
-                output_file,
-                assembly
-                    .iter()
-                    .map(|line| line.iter().collect::<String>())
-                    .collect::<Vec<String>>()
-                    .join("\n"),
-            )
-            .map_err(|e| e.to_string())?
+            fs::write(output_file, assembly.join("\n")).map_err(|e| e.to_string())?
         }
         None => return Err(String::from("Failed to compile")),
     };
