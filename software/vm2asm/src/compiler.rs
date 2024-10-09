@@ -39,11 +39,9 @@ impl Compiler {
         assert!(line_source.tokens.len() == 1);
         let command = &line_source.tokens[0];
         match command.as_str() {
-            "add" => {
-                self.asm.append(&mut CodeGen::add());
-            }
-            "sub" => {}
-            "neg" => {}
+            "add" => self.asm.append(&mut CodeGen::add()),
+            "sub" => self.asm.append(&mut CodeGen::sub()),
+            "neg" => self.asm.append(&mut CodeGen::neg()),
             "eq" => {}
             "gt" => {}
             "lt" => {}
