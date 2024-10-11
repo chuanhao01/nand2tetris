@@ -117,6 +117,16 @@ impl CodeGen {
                     format!("M=D // *SP = {}", i),
                 ]);
             }
+            MemorySegments::Static => {
+                asm.append(&mut vec![
+                    format!("@{}.{}", file_name, i),
+                    String::from("D=M"),
+                    SP.to_string(),
+                    String::from("M=M+1 // SP++"),
+                    String::from("A=M-1"),
+                    String::from("M=D // *SP = D"),
+                ]);
+            }
             _ => {}
         };
         asm
@@ -159,12 +169,18 @@ mod tests {
             load_asm_file_to_vec("push_local_3.asm")
         );
     }
-
     #[test]
     fn push_constant_4() {
         assert_eq!(
             CodeGen::push_segment(&String::from("f"), MemorySegments::Constant, 4),
             load_asm_file_to_vec("push_constant_4.asm")
+        );
+    }
+    #[test]
+    fn push_f_static_4() {
+        assert_eq!(
+            CodeGen::push_segment(&String::from("f"), MemorySegments::Static, 4),
+            load_asm_file_to_vec("push_f_static_4.asm")
         );
     }
 }
