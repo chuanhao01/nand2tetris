@@ -90,6 +90,27 @@ impl Compiler {
                 )
             }
         };
+        match memory_segment {
+            MemorySegments::Temp => {
+                // i should only be 0 - 7
+                if i > 7 {
+                    return self.error(
+                        line_source.line,
+                        format!("push temp i, i should be between 0-7 not {}", i),
+                    );
+                }
+            }
+            MemorySegments::Pointer => {
+                // Should only be 0 or 1
+                if i > 1 {
+                    return self.error(
+                        line_source.line,
+                        format!("push pointer i, i should be 0 or 1, not {}", i),
+                    );
+                }
+            }
+            _ => {} // The other memory segment types, no need to check
+        }
         self.asm.append(&mut CodeGen::push_segment(
             &self.file_name,
             memory_segment,
@@ -115,6 +136,27 @@ mod tests {
     #[test]
     fn error_quad_token() {
         let source = "wow very funny lol";
+        let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
+        compiler.run();
+        assert!(compiler.had_error)
+    }
+    #[test]
+    fn error_neg_push() {
+        let source = "push constant -10";
+        let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
+        compiler.run();
+        assert!(compiler.had_error)
+    }
+    #[test]
+    fn error_temp_large() {
+        let source = "push temp 10";
+        let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
+        compiler.run();
+        assert!(compiler.had_error)
+    }
+    #[test]
+    fn error_pointer_3() {
+        let source = "push pointer 3";
         let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
         compiler.run();
         assert!(compiler.had_error)
