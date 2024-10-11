@@ -54,7 +54,7 @@ impl CodeGen {
         let mut asm = vec![String::from("//add")];
         asm.append(&mut Self::sp_minus_1_load_d());
         asm.append(&mut Self::sp_a_m_minus_1());
-        asm.push(String::from("M=M+D // *SP-- = *SP-- + D, *SP-- = X + Y"));
+        asm.push(String::from("M=D+M // *SP-- = *SP-- + D, *SP-- = X + Y"));
         asm
     }
     pub fn sub() -> Vec<String> {
@@ -108,7 +108,14 @@ impl CodeGen {
                 ]);
             }
             MemorySegments::Constant => {
-                asm.append(&mut vec![]);
+                asm.append(&mut vec![
+                    format!("@{}", i),
+                    format!("D=A // D = {}", i),
+                    SP.to_string(),
+                    String::from("AM=M+1 // *SP+1, SP++"),
+                    String::from("A=A-1"),
+                    format!("M=D // *SP = {}", i),
+                ]);
             }
             _ => {}
         };
@@ -150,6 +157,14 @@ mod tests {
         assert_eq!(
             CodeGen::push_segment(&String::from("f"), MemorySegments::Local, 3),
             load_asm_file_to_vec("push_local_3.asm")
+        );
+    }
+
+    #[test]
+    fn push_constant_4() {
+        assert_eq!(
+            CodeGen::push_segment(&String::from("f"), MemorySegments::Constant, 4),
+            load_asm_file_to_vec("push_constant_4.asm")
         );
     }
 }
