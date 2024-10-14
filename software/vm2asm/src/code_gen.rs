@@ -50,6 +50,7 @@ impl MemorySegments {
     }
 }
 
+#[derive(Default)]
 pub struct CodeGen {
     binary_counter: usize,
 }
@@ -87,17 +88,28 @@ impl CodeGen {
         vec![SP.to_string(), String::from("A=M-1")]
     }
 
-    fn bin_comp(comp: &str) -> Vec<String> {
+    pub fn bin_comp(&mut self, file_name: &String, comp: &str) -> Vec<String> {
         let asm_jump_comp = match comp {
             "eq" => "JEQ",
             "gt" => "JGT",
             "lt" => "JLT",
             _ => panic!("Unexpected comp, {}", comp),
         };
+        self.binary_counter += 1;
         vec![
             format!("//{}", comp),
             SP.to_string(),
             String::from("AM=M-1 // SP = SP--"),
+            String::from("D=M // D = *SP"),
+            String::from("A=A-1 // SP--"),
+            String::from("D=M-D // D = *SP-- - D, D=x-y"),
+            String::from("M=-1 // *SP-- = true"),
+            format!("@{}.{}.{}", file_name, comp, self.binary_counter - 1),
+            format!("D;{}", asm_jump_comp),
+            SP.to_string(),
+            String::from("A=M-1"),
+            String::from("M=0 // *SP-- = false"),
+            format!("({}.{}.{})", file_name, comp, self.binary_counter - 1),
         ]
     }
 
@@ -176,11 +188,6 @@ impl CodeGen {
         asm
     }
 }
-impl Default for CodeGen {
-    fn default() -> Self {
-        Self { binary_counter: 0 }
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -244,6 +251,24 @@ mod tests {
         assert_eq!(
             CodeGen::push_segment(&String::from("f"), MemorySegments::Temp, 3),
             load_asm_file_to_vec("push_temp_3.asm")
+        );
+    }
+    #[test]
+    fn eq_f_0() {
+        let mut code_gen = CodeGen::default();
+        assert_eq!(
+            code_gen.bin_comp(&String::from("f"), "eq"),
+            load_asm_file_to_vec("eq_f_0.asm")
+        );
+    }
+    #[test]
+    #[allow(clippy::field_reassign_with_default)]
+    fn lt_f_10() {
+        let mut code_gen = CodeGen::default();
+        code_gen.binary_counter = 10;
+        assert_eq!(
+            code_gen.bin_comp(&String::from("f"), "lt"),
+            load_asm_file_to_vec("lt_f_10.asm")
         );
     }
 }
