@@ -44,7 +44,7 @@ impl MemorySegments {
             MemorySegments::Local => String::from("LCL"),
             MemorySegments::Argument => String::from("ARG"),
             MemorySegments::This => String::from("THIS"),
-            MemorySegments::That => String::from("That"),
+            MemorySegments::That => String::from("THAT"),
             _ => panic!("Tried to_asm an unkown memory_segment, {:?}", self),
         }
     }
@@ -295,6 +295,13 @@ mod tests {
         assert_eq!(
             CodeGen::push_segment(&String::from("f"), MemorySegments::Local, 3),
             load_asm_file_to_vec("push_local_3.asm")
+        );
+    }
+    #[test]
+    fn push_that_4() {
+        assert_eq!(
+            CodeGen::push_segment(&String::from("f"), MemorySegments::That, 4),
+            load_asm_file_to_vec("push_that_4.asm")
         );
     }
     #[test]
