@@ -76,7 +76,67 @@ impl Compiler {
             ),
         }
     }
-    fn pop_segment(&mut self, line_source: &LineSource) {}
+    fn push_pop_check_memory_segment_i(
+        &mut self,
+        line_source: &LineSource,
+        memory_segment: &MemorySegments,
+        i: usize,
+    ) -> bool {
+        match memory_segment {
+            MemorySegments::Temp => {
+                // i should only be 0 - 7
+                if i > 7 {
+                    self.error(
+                        line_source.line,
+                        format!("push temp i, i should be between 0-7 not {}", i),
+                    );
+                    true
+                } else {
+                    false
+                }
+            }
+            MemorySegments::Pointer => {
+                // Should only be 0 or 1
+                if i > 1 {
+                    self.error(
+                        line_source.line,
+                        format!("push pointer i, i should be 0 or 1, not {}", i),
+                    );
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false, // The other memory segment types, no need to check
+        }
+    }
+    fn pop_segment(&mut self, line_source: &LineSource) {
+        assert!(line_source.tokens.len() == 3);
+        let memory_segment = match MemorySegments::from_token(line_source.tokens[1].as_str()) {
+            Ok(memory_segment) => memory_segment,
+            Err(msg) => return self.error(line_source.line, msg),
+        };
+        let i = match line_source.tokens[2].parse::<usize>() {
+            Ok(i) => i,
+            Err(_) => {
+                return self.error(
+                    line_source.line,
+                    format!("Unknown i at {}", line_source.tokens[2]),
+                )
+            }
+        };
+        if self.push_pop_check_memory_segment_i(line_source, &memory_segment, i) {
+            return;
+        }
+        if let MemorySegments::Constant = memory_segment {
+            return self.error(line_source.line, String::from("Should not pop constant"));
+        }
+        self.asm.append(&mut CodeGen::pop_segment(
+            &self.file_name,
+            memory_segment,
+            i,
+        ));
+    }
     fn push_segment(&mut self, line_source: &LineSource) {
         assert!(line_source.tokens.len() == 3);
         let memory_segment = match MemorySegments::from_token(line_source.tokens[1].as_str()) {
@@ -92,26 +152,8 @@ impl Compiler {
                 )
             }
         };
-        match memory_segment {
-            MemorySegments::Temp => {
-                // i should only be 0 - 7
-                if i > 7 {
-                    return self.error(
-                        line_source.line,
-                        format!("push temp i, i should be between 0-7 not {}", i),
-                    );
-                }
-            }
-            MemorySegments::Pointer => {
-                // Should only be 0 or 1
-                if i > 1 {
-                    return self.error(
-                        line_source.line,
-                        format!("push pointer i, i should be 0 or 1, not {}", i),
-                    );
-                }
-            }
-            _ => {} // The other memory segment types, no need to check
+        if self.push_pop_check_memory_segment_i(line_source, &memory_segment, i) {
+            return;
         }
         self.asm.append(&mut CodeGen::push_segment(
             &self.file_name,
@@ -161,6 +203,24 @@ mod tests {
         let source = "push pointer 3";
         let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
         compiler.run();
+        assert!(compiler.had_error)
+    }
+    #[test]
+    fn error_push_pop_check_memory_segment() {
+        let source = "";
+        let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
+        let line_source = LineSource {
+            line: 1,
+            tokens: Vec::default(),
+        };
+        assert!(compiler.push_pop_check_memory_segment_i(
+            &line_source,
+            &MemorySegments::Pointer,
+            3
+        ));
+        assert!(compiler.had_error);
+        let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
+        assert!(compiler.push_pop_check_memory_segment_i(&line_source, &MemorySegments::Temp, 8));
         assert!(compiler.had_error)
     }
 }
