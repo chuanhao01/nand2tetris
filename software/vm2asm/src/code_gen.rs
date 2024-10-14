@@ -127,6 +127,32 @@ impl CodeGen {
                     String::from("M=D // *SP = D"),
                 ]);
             }
+            MemorySegments::Temp => {
+                let temp_address = 5 + i;
+                asm.append(&mut vec![
+                    format!("@{}", temp_address),
+                    String::from("D=M"),
+                    SP.to_string(),
+                    String::from("M=M+1 // SP++"),
+                    String::from("A=M-1"),
+                    String::from("M=D // *SP = D"),
+                ]);
+            }
+            MemorySegments::Pointer => {
+                let pointer = match i {
+                    0 => "THIS",
+                    1 => "THAT",
+                    _ => panic!("Pointer i should be 0 or 1, not {}", i),
+                };
+                asm.append(&mut vec![
+                    format!("@{}", pointer),
+                    String::from("D=M"),
+                    SP.to_string(),
+                    String::from("M=M+1 // SP++"),
+                    String::from("A=M-1"),
+                    String::from("M=D // *SP = D"),
+                ]);
+            }
             _ => {}
         };
         asm
@@ -181,6 +207,13 @@ mod tests {
         assert_eq!(
             CodeGen::push_segment(&String::from("f"), MemorySegments::Static, 4),
             load_asm_file_to_vec("push_f_static_4.asm")
+        );
+    }
+    #[test]
+    fn push_pointer_1() {
+        assert_eq!(
+            CodeGen::push_segment(&String::from("f"), MemorySegments::Pointer, 1),
+            load_asm_file_to_vec("push_pointer_1.asm")
         );
     }
 }
