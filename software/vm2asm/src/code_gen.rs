@@ -77,6 +77,28 @@ impl CodeGen {
             String::from("M=-M // *SP-- = -*SP--"),
         ]
     }
+    pub fn and() -> Vec<String> {
+        let mut asm = vec![String::from("//and")];
+        asm.append(&mut Self::sp_minus_1_load_d());
+        asm.append(&mut Self::sp_a_m_minus_1());
+        asm.push(String::from("M=D&M"));
+        asm
+    }
+    pub fn or() -> Vec<String> {
+        let mut asm = vec![String::from("//or")];
+        asm.append(&mut Self::sp_minus_1_load_d());
+        asm.append(&mut Self::sp_a_m_minus_1());
+        asm.push(String::from("M=D|M"));
+        asm
+    }
+    pub fn not() -> Vec<String> {
+        vec![
+            String::from("//not"),
+            SP.to_string(),
+            String::from("A=M-1"),
+            String::from("M=!M // *SP-- = !*SP--"),
+        ]
+    }
     fn sp_minus_1_load_d() -> Vec<String> {
         vec![
             SP.to_string(),
@@ -270,5 +292,17 @@ mod tests {
             code_gen.bin_comp(&String::from("f"), "lt"),
             load_asm_file_to_vec("lt_f_10.asm")
         );
+    }
+    #[test]
+    fn and() {
+        assert_eq!(CodeGen::and(), load_asm_file_to_vec("and.asm"));
+    }
+    #[test]
+    fn or() {
+        assert_eq!(CodeGen::or(), load_asm_file_to_vec("or.asm"));
+    }
+    #[test]
+    fn not() {
+        assert_eq!(CodeGen::not(), load_asm_file_to_vec("not.asm"));
     }
 }
