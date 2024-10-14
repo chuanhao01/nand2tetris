@@ -205,7 +205,6 @@ impl CodeGen {
                     String::from("M=D // *SP = D"),
                 ]);
             }
-            _ => {}
         };
         asm
     }
@@ -228,7 +227,35 @@ impl CodeGen {
                     String::from("M=D"),
                 ]);
             }
-            _ => {}
+            MemorySegments::Pointer => {
+                let pointer = match i {
+                    0 => "THIS",
+                    1 => "THAT",
+                    _ => panic!("Pointer i should be 0 or 1, not {}", i),
+                };
+                asm.append(&mut Self::sp_minus_1_load_d());
+                asm.append(&mut vec![format!("@{}", pointer), String::from("M=D")]);
+            }
+            MemorySegments::Constant => {
+                panic!("Pop Constant should not happen")
+            }
+            MemorySegments::Local
+            | MemorySegments::Argument
+            | MemorySegments::That
+            | MemorySegments::This => {
+                asm.append(&mut Self::sp_minus_1_load_d());
+                asm.append(&mut vec![
+                    format!("@{}", memory_segment.to_asm()),
+                    String::from("D=D+M // *SP + LCL"),
+                    format!("@{}", i),
+                    String::from("D=D+A // *SP + (LCL+i)"),
+                    SP.to_string(),
+                    String::from("A=M // *SP"),
+                    String::from("A=M // A = *SP"),
+                    String::from("A=D-A // A = *SP + (LCL+i) - *SP, A = (LCL+i)"),
+                    String::from("M=D-A // *(LCL+i) = *SP + (LCL+i) - (LCL+i)"),
+                ]);
+            }
         };
         asm
     }
@@ -340,6 +367,25 @@ mod tests {
         assert_eq!(
             CodeGen::pop_segment(&String::from("f"), MemorySegments::Static, 4),
             load_asm_file_to_vec("pop_f_static_4.asm")
+        );
+    }
+    #[test]
+    fn pop_pointer_1() {
+        assert_eq!(
+            CodeGen::pop_segment(&String::from("f"), MemorySegments::Pointer, 1),
+            load_asm_file_to_vec("pop_pointer_1.asm")
+        );
+    }
+    #[test]
+    #[should_panic]
+    fn pop_constant_3() {
+        CodeGen::pop_segment(&String::from("f"), MemorySegments::Constant, 3);
+    }
+    #[test]
+    fn pop_local_3() {
+        assert_eq!(
+            CodeGen::pop_segment(&String::from("f"), MemorySegments::Local, 3),
+            load_asm_file_to_vec("pop_local_3.asm")
         );
     }
 }
