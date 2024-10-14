@@ -209,6 +209,22 @@ impl CodeGen {
         };
         asm
     }
+    pub fn pop_segment(
+        file_name: &String,
+        memory_segment: MemorySegments,
+        i: usize,
+    ) -> Vec<String> {
+        let mut asm = vec![format!("//pop {} {}", memory_segment.to_token(), i)];
+        match memory_segment {
+            MemorySegments::Temp => {
+                let temp_address = i + 5;
+                asm.append(&mut Self::sp_minus_1_load_d());
+                asm.append(&mut vec![format!("@{}", temp_address), String::from("M=D")]);
+            }
+            _ => {}
+        };
+        asm
+    }
 }
 
 #[cfg(test)]
@@ -304,5 +320,12 @@ mod tests {
     #[test]
     fn not() {
         assert_eq!(CodeGen::not(), load_asm_file_to_vec("not.asm"));
+    }
+    #[test]
+    fn pop_temp_3() {
+        assert_eq!(
+            CodeGen::pop_segment(&String::from("f"), MemorySegments::Temp, 3),
+            load_asm_file_to_vec("pop_temp_3.asm")
+        );
     }
 }
