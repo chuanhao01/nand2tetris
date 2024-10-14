@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 const SP: &str = "@SP";
 
 #[derive(Debug)]
@@ -48,7 +50,9 @@ impl MemorySegments {
     }
 }
 
-pub struct CodeGen;
+pub struct CodeGen {
+    binary_counter: usize,
+}
 impl CodeGen {
     pub fn add() -> Vec<String> {
         let mut asm = vec![String::from("//add")];
@@ -81,6 +85,20 @@ impl CodeGen {
     }
     fn sp_a_m_minus_1() -> Vec<String> {
         vec![SP.to_string(), String::from("A=M-1")]
+    }
+
+    fn bin_comp(comp: &str) -> Vec<String> {
+        let asm_jump_comp = match comp {
+            "eq" => "JEQ",
+            "gt" => "JGT",
+            "lt" => "JLT",
+            _ => panic!("Unexpected comp, {}", comp),
+        };
+        vec![
+            format!("//{}", comp),
+            SP.to_string(),
+            String::from("AM=M-1 // SP = SP--"),
+        ]
     }
 
     pub fn push_segment(
@@ -158,6 +176,11 @@ impl CodeGen {
         asm
     }
 }
+impl Default for CodeGen {
+    fn default() -> Self {
+        Self { binary_counter: 0 }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -214,6 +237,13 @@ mod tests {
         assert_eq!(
             CodeGen::push_segment(&String::from("f"), MemorySegments::Pointer, 1),
             load_asm_file_to_vec("push_pointer_1.asm")
+        );
+    }
+    #[test]
+    fn push_temp_3() {
+        assert_eq!(
+            CodeGen::push_segment(&String::from("f"), MemorySegments::Temp, 3),
+            load_asm_file_to_vec("push_temp_3.asm")
         );
     }
 }
