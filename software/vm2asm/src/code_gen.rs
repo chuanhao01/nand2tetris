@@ -221,6 +221,13 @@ impl CodeGen {
                 asm.append(&mut Self::sp_minus_1_load_d());
                 asm.append(&mut vec![format!("@{}", temp_address), String::from("M=D")]);
             }
+            MemorySegments::Static => {
+                asm.append(&mut Self::sp_minus_1_load_d());
+                asm.append(&mut vec![
+                    format!("@{}.{}", file_name, i),
+                    String::from("M=D"),
+                ]);
+            }
             _ => {}
         };
         asm
@@ -326,6 +333,13 @@ mod tests {
         assert_eq!(
             CodeGen::pop_segment(&String::from("f"), MemorySegments::Temp, 3),
             load_asm_file_to_vec("pop_temp_3.asm")
+        );
+    }
+    #[test]
+    fn pop_f_static_4() {
+        assert_eq!(
+            CodeGen::pop_segment(&String::from("f"), MemorySegments::Static, 4),
+            load_asm_file_to_vec("pop_f_static_4.asm")
         );
     }
 }
