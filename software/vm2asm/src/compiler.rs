@@ -5,6 +5,7 @@ pub struct Compiler {
     asm: Vec<String>, // Output of compiled asm
     file_name: String,
     had_error: bool,
+    code_gen: CodeGen,
 }
 
 impl Compiler {
@@ -15,6 +16,7 @@ impl Compiler {
             line_sources,
             file_name,
             had_error: false,
+            code_gen: CodeGen::default(),
         }
     }
 
@@ -49,12 +51,12 @@ impl Compiler {
             "add" => self.asm.append(&mut CodeGen::add()),
             "sub" => self.asm.append(&mut CodeGen::sub()),
             "neg" => self.asm.append(&mut CodeGen::neg()),
-            "eq" => {}
-            "gt" => {}
-            "lt" => {}
-            "and" => {}
-            "or" => {}
-            "not" => {}
+            "eq" | "gt" | "lt" => self
+                .asm
+                .append(&mut self.code_gen.bin_comp(&self.file_name, command)),
+            "and" => self.asm.append(&mut CodeGen::and()),
+            "or" => self.asm.append(&mut CodeGen::or()),
+            "not" => self.asm.append(&mut CodeGen::not()),
             "return" => self.error(line_source.line, String::from("Not Implemented yet")), // Not implemented yet
             _ => self.error(
                 line_source.line,
