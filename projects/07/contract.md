@@ -350,3 +350,13 @@ A=M
 D=M
 @Filename.i
 M=D
+
+### Constant
+
+Push
+@i
+D=A // D = i
+@SP
+AM=M+1 // *SP+1, SP++
+A=A-1
+M=D // *SP = i
