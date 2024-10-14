@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 const SP: &str = "@SP";
 
 #[derive(Debug)]
