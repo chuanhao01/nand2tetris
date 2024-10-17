@@ -30,7 +30,7 @@ impl Compiler {
         }
     }
 
-    pub fn run(&mut self) {
+    fn run(&mut self) {
         for line_source in self.line_sources.clone() {
             let tokens = &line_source.tokens;
             match tokens.len() {
@@ -161,6 +161,25 @@ impl Compiler {
             i,
         ));
     }
+    fn is_valid_label(label: &String) -> bool {
+        let label = label.chars().collect::<Vec<char>>();
+        if label.is_empty() {
+            return false;
+        }
+        if !(label[0].is_ascii_alphabetic()
+            || label[0] == '_'
+            || label[0] == '.'
+            || label[0] == ':')
+        {
+            return false;
+        }
+        for c in &label[1..label.len()] {
+            if !(c.is_ascii_alphanumeric() || c == &'_' || c == &'.' || c == &':') {
+                return false;
+            }
+        }
+        true
+    }
 
     fn error(&mut self, line: usize, msg: String) {
         // We have already encountered the first error
@@ -222,5 +241,27 @@ mod tests {
         let mut compiler = Compiler::new(source.to_string(), "somefile".to_string());
         assert!(compiler.push_pop_check_memory_segment_i(&line_source, &MemorySegments::Temp, 8));
         assert!(compiler.had_error)
+    }
+    #[test]
+    fn valid_labels() {
+        let labels = vec!["_", ".", ":", "a2", ".2", "DRAW_REACT", "wow", "_2:no"];
+        let labels = labels
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+        for label in labels {
+            assert!(Compiler::is_valid_label(&label));
+        }
+    }
+    #[test]
+    fn invalid_labels() {
+        let labels = vec!["21", "2abc", "$wow"];
+        let labels = labels
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+        for label in labels {
+            assert!(!Compiler::is_valid_label(&label));
+        }
     }
 }
