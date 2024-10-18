@@ -1,4 +1,17 @@
-push constant 42
-push constant 45
-pop that 5
-pop that 2
+push constant 1
+pop temp 0
+label LOOP
+push temp 0
+push constant 100
+gt
+if-goto END
+push temp 1
+push temp 0
+add
+pop temp 1
+push temp 0
+push constant 1
+add
+pop temp 0
+goto LOOP
+label END

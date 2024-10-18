@@ -6,6 +6,7 @@ pub struct Compiler {
     file_name: String,
     had_error: bool,
     code_gen: CodeGen,
+    function_label_stack: Vec<String>,
 }
 
 impl Compiler {
@@ -17,6 +18,7 @@ impl Compiler {
             file_name,
             had_error: false,
             code_gen: CodeGen::default(),
+            function_label_stack: Vec::default(),
         }
     }
 
@@ -35,6 +37,7 @@ impl Compiler {
             let tokens = &line_source.tokens;
             match tokens.len() {
                 1 => self.single_command(&line_source),
+                2 => self.double_command(&line_source),
                 3 => self.triple_command(&line_source),
                 _ => self.error(
                     line_source.line,
@@ -61,6 +64,40 @@ impl Compiler {
             _ => self.error(
                 line_source.line,
                 format!("Unknown single command, {}", command),
+            ),
+        }
+    }
+    fn double_command(&mut self, line_source: &LineSource) {
+        assert!(line_source.tokens.len() == 2);
+        let command = &line_source.tokens[0];
+        let label = &line_source.tokens[1];
+        if !Self::is_valid_label(&label) {
+            return self.error(line_source.line, format!("Invalid label used, {}", label));
+        }
+        // If not part of any function, empty label
+        let function_label = if self.function_label_stack.is_empty() {
+            String::new()
+        } else {
+            self.function_label_stack.last().unwrap().to_owned()
+        };
+        match command.as_str() {
+            "label" => {
+                self.asm
+                    .append(&mut CodeGen::label(&self.file_name, &function_label, label))
+            }
+            "goto" => self.asm.append(&mut CodeGen::goto_label(
+                &self.file_name,
+                &function_label,
+                label,
+            )),
+            "if-goto" => self.asm.append(&mut CodeGen::if_goto_label(
+                &self.file_name,
+                &function_label,
+                label,
+            )),
+            _ => self.error(
+                line_source.line,
+                format!("Unknown double command, {}", command),
             ),
         }
     }

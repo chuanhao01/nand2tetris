@@ -1,6 +1,6 @@
 use std::{env, fs, path::Path};
 
-use vm2asm::Compiler;
+use vm2asm::{CodeGen, Compiler};
 
 type ProgResult = Result<(), String>;
 
@@ -45,7 +45,9 @@ fn compile_file(file_path: &str) -> ProgResult {
             let mut output_file =
                 output_dir.join(file_path.file_stem().expect("Should have a file stem"));
             output_file.set_extension("asm");
-            fs::write(output_file, assembly.join("\n")).map_err(|e| e.to_string())?
+            let mut asm = CodeGen::bootstrap();
+            asm.append(&mut assembly.clone());
+            fs::write(output_file, asm.join("\n")).map_err(|e| e.to_string())?
         }
         None => return Err(String::from("Failed to compile")),
     };

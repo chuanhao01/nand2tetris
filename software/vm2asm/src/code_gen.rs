@@ -53,6 +53,15 @@ pub struct CodeGen {
     binary_counter: usize,
 }
 impl CodeGen {
+    pub fn bootstrap() -> Vec<String> {
+        // Called once at the start?
+        vec![
+            String::from("@256"),
+            String::from("D=A"),
+            String::from("@SP"),
+            String::from("M=D"),
+        ]
+    }
     pub fn add() -> Vec<String> {
         let mut asm = vec![String::from("//add")];
         asm.append(&mut Self::sp_minus_1_load_d());
@@ -255,6 +264,45 @@ impl CodeGen {
                 ]);
             }
         };
+        asm
+    }
+    fn generate_asm_label(file_name: &String, function_label: &String, label: &String) -> String {
+        format!("{}.{}${}", file_name, function_label, label)
+    }
+    pub fn label(file_name: &String, function_label: &String, label: &String) -> Vec<String> {
+        vec![
+            format!("//label {}", label),
+            format!(
+                "({})",
+                Self::generate_asm_label(file_name, function_label, label)
+            ),
+        ]
+    }
+    pub fn goto_label(file_name: &String, function_label: &String, label: &String) -> Vec<String> {
+        vec![
+            format!("//goto {}", label),
+            format!(
+                "@{}",
+                Self::generate_asm_label(file_name, function_label, label)
+            ),
+            String::from("0;JMP"),
+        ]
+    }
+    pub fn if_goto_label(
+        file_name: &String,
+        function_label: &String,
+        label: &String,
+    ) -> Vec<String> {
+        let mut asm = vec![format!("//if-goto {}", label)];
+        asm.append(&mut Self::sp_minus_1_load_d());
+        asm.append(&mut vec![
+            String::from("D=!D"),
+            format!(
+                "@{}",
+                Self::generate_asm_label(file_name, function_label, label)
+            ),
+            String::from("D;JEQ"),
+        ]);
         asm
     }
 }
