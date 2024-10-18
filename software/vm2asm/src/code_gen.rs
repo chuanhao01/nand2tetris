@@ -296,12 +296,11 @@ impl CodeGen {
         let mut asm = vec![format!("//if-goto {}", label)];
         asm.append(&mut Self::sp_minus_1_load_d());
         asm.append(&mut vec![
-            String::from("D=!D"),
             format!(
                 "@{}",
                 Self::generate_asm_label(file_name, function_label, label)
             ),
-            String::from("D;JEQ"),
+            String::from("D;JNE"),
         ]);
         asm
     }
