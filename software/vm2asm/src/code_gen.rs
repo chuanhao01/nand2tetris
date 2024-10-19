@@ -51,6 +51,7 @@ impl MemorySegments {
 #[derive(Default)]
 pub struct CodeGen {
     binary_counter: usize,
+    call_counter: usize,
 }
 impl CodeGen {
     pub fn bootstrap() -> Vec<String> {
@@ -290,6 +291,59 @@ impl CodeGen {
             String::from("D;JNE"),
         ]);
         asm
+    }
+    pub fn call(&mut self, function_name: &String, nargs: usize) -> Vec<String> {
+        self.call_counter += 1;
+        vec![
+            format!("//call {} {}", function_name, nargs),
+            format!(
+                "@{}.return.{} // push @{}.return.{}",
+                function_name,
+                self.call_counter - 1,
+                function_name,
+                self.call_counter - 1
+            ),
+            String::from("D=A"),
+            SP.to_string(),
+            String::from("AM=M+1 // SP++"),
+            String::from("A=A-1 // SP"),
+            format!("M=D // {}.return.{}", function_name, self.call_counter - 1),
+            // push LCL
+            String::from("@LCL // push LCL"),
+            String::from("D=M"),
+            SP.to_string(),
+            String::from("AM=M+1 // SP++"),
+            String::from("A=A-1 // SP"),
+            String::from("M=D // LCL"),
+            // push ARG
+            String::from("@ARG // push ARG"),
+            String::from("D=M"),
+            SP.to_string(),
+            String::from("AM=M+1 // SP++"),
+            String::from("A=A-1 // SP"),
+            String::from("M=D // ARG"),
+            // push THIS
+            String::from("@THIS // push THIS"),
+            String::from("D=M"),
+            SP.to_string(),
+            String::from("AM=M+1 // SP++"),
+            String::from("A=A-1 // SP"),
+            String::from("M=D // THIS"),
+            // push THAT
+            String::from("@THAT // push THAT"),
+            String::from("D=M"),
+            SP.to_string(),
+            String::from("AM=M+1 // SP++"),
+            String::from("A=A-1 // SP"),
+            String::from("M=D // THAT"),
+            // Setting LCL and ARG
+            SP.to_string(),
+            String::from("D=M"),
+            String::from("@LCL"),
+            String::from("M=D // set LCL"),
+            format!("@{}", 5 + nargs),
+            format!("D=D-A // D = SP - {}", 5 + nargs),
+        ]
     }
 }
 
