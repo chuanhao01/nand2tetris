@@ -3,6 +3,15 @@
 Treat every other value that is not -1 or 0 as true
 Because thats the behaviour for `if-goto label` WHY?
 
+Also for labels
+
+Labels within functions should already contain file name, so just take the label as is
+so `function function_name`
+should produce `(function_name)`
+
+label in a function should generate
+`(function_name$label_name)`
+
 # From the book
 
 8.2.1 Program Flow Commands
