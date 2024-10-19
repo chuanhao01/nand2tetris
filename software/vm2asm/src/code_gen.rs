@@ -427,4 +427,47 @@ mod tests {
             load_asm_file_to_vec("pop_local_3.asm")
         );
     }
+    #[test]
+    fn generate_asm_label() {
+        assert_eq!(
+            CodeGen::generate_asm_label(&"function_name".to_string(), &"label_name".to_string())
+                .as_str(),
+            "function_name$label_name"
+        );
+        assert_eq!(
+            CodeGen::generate_asm_label(&"".to_string(), &"label_name".to_string()).as_str(),
+            "$label_name"
+        );
+    }
+    #[test]
+    fn label_wow() {
+        assert_eq!(
+            CodeGen::label(&String::new(), &String::from("wow")),
+            load_asm_file_to_vec("label_wow.asm")
+        );
+    }
+    #[test]
+    #[allow(non_snake_case)]
+    fn label_Main_main_wow() {
+        assert_eq!(
+            CodeGen::label(&String::from("Main.main"), &String::from("wow")),
+            load_asm_file_to_vec("label_Main_main_wow.asm")
+        );
+    }
+    #[test]
+    #[allow(non_snake_case)]
+    fn goto_Main_main_wow() {
+        assert_eq!(
+            CodeGen::goto_label(&String::from("Main.main"), &String::from("wow")),
+            load_asm_file_to_vec("goto_Main_main_wow.asm")
+        );
+    }
+    #[test]
+    #[allow(non_snake_case)]
+    fn if_goto_Main_main_wow() {
+        assert_eq!(
+            CodeGen::if_goto_label(&String::from("Main.main"), &String::from("wow")),
+            load_asm_file_to_vec("if_goto_Main_main_wow.asm")
+        );
+    }
 }
