@@ -71,7 +71,7 @@ impl Compiler {
         assert!(line_source.tokens.len() == 2);
         let command = &line_source.tokens[0];
         let label = &line_source.tokens[1];
-        if !Self::is_valid_label(&label) {
+        if !Self::is_valid_label(label) {
             return self.error(line_source.line, format!("Invalid label used, {}", label));
         }
         // If not part of any function, empty label
@@ -81,20 +81,13 @@ impl Compiler {
             self.function_label_stack.last().unwrap().to_owned()
         };
         match command.as_str() {
-            "label" => {
-                self.asm
-                    .append(&mut CodeGen::label(&self.file_name, &function_label, label))
-            }
-            "goto" => self.asm.append(&mut CodeGen::goto_label(
-                &self.file_name,
-                &function_label,
-                label,
-            )),
-            "if-goto" => self.asm.append(&mut CodeGen::if_goto_label(
-                &self.file_name,
-                &function_label,
-                label,
-            )),
+            "label" => self.asm.append(&mut CodeGen::label(&function_label, label)),
+            "goto" => self
+                .asm
+                .append(&mut CodeGen::goto_label(&function_label, label)),
+            "if-goto" => self
+                .asm
+                .append(&mut CodeGen::if_goto_label(&function_label, label)),
             _ => self.error(
                 line_source.line,
                 format!("Unknown double command, {}", command),

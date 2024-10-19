@@ -266,40 +266,27 @@ impl CodeGen {
         };
         asm
     }
-    fn generate_asm_label(file_name: &String, function_label: &String, label: &String) -> String {
-        format!("{}.{}${}", file_name, function_label, label)
+    fn generate_asm_label(function_label: &String, label: &String) -> String {
+        format!("{}${}", function_label, label)
     }
-    pub fn label(file_name: &String, function_label: &String, label: &String) -> Vec<String> {
+    pub fn label(function_label: &String, label: &String) -> Vec<String> {
         vec![
             format!("//label {}", label),
-            format!(
-                "({})",
-                Self::generate_asm_label(file_name, function_label, label)
-            ),
+            format!("({})", Self::generate_asm_label(function_label, label)),
         ]
     }
-    pub fn goto_label(file_name: &String, function_label: &String, label: &String) -> Vec<String> {
+    pub fn goto_label(function_label: &String, label: &String) -> Vec<String> {
         vec![
             format!("//goto {}", label),
-            format!(
-                "@{}",
-                Self::generate_asm_label(file_name, function_label, label)
-            ),
+            format!("@{}", Self::generate_asm_label(function_label, label)),
             String::from("0;JMP"),
         ]
     }
-    pub fn if_goto_label(
-        file_name: &String,
-        function_label: &String,
-        label: &String,
-    ) -> Vec<String> {
+    pub fn if_goto_label(function_label: &String, label: &String) -> Vec<String> {
         let mut asm = vec![format!("//if-goto {}", label)];
         asm.append(&mut Self::sp_minus_1_load_d());
         asm.append(&mut vec![
-            format!(
-                "@{}",
-                Self::generate_asm_label(file_name, function_label, label)
-            ),
+            format!("@{}", Self::generate_asm_label(function_label, label)),
             String::from("D;JNE"),
         ]);
         asm
