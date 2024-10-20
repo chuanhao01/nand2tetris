@@ -292,12 +292,18 @@ impl CodeGen {
         ]);
         asm
     }
-    pub fn call(&mut self, function_name: &String, nargs: usize) -> Vec<String> {
+    pub fn call(
+        &mut self,
+        file_name: &String,
+        function_name: &String,
+        nargs: usize,
+    ) -> Vec<String> {
         self.call_counter += 1;
         vec![
-            format!("//call {} {}", function_name, nargs),
+            format!("//call {} {}, {}", function_name, nargs, file_name),
             format!(
-                "@{}.return.{} // push @{}.return.{}",
+                "@{}.{}.return.{} // push @{}.return.{}",
+                file_name,
                 function_name,
                 self.call_counter - 1,
                 function_name,
@@ -343,6 +349,66 @@ impl CodeGen {
             String::from("M=D // set LCL"),
             format!("@{}", 5 + nargs),
             format!("D=D-A // D = SP - {}", 5 + nargs),
+            String::from("@ARG"),
+            String::from("M=D // set ARG"),
+            format!("@{}", function_name),
+            String::from("0;JMP"),
+            format!(
+                "({}.{}.return.{})",
+                file_name,
+                function_name,
+                self.call_counter - 1
+            ),
+        ]
+    }
+    pub fn function(function_name: &String, nargs: usize) -> Vec<String> {
+        vec![
+            format!("//function {} {}", function_name, nargs),
+            format!("({})", function_name),
+            format!("@{}", nargs),
+            format!("D=A // D = {}", nargs),
+            SP.to_string(),
+            format!("M=M+D // SP = SP + {}", nargs),
+        ]
+    }
+    pub fn f_return() -> Vec<String> {
+        vec![
+            String::from("//return"),
+            SP.to_string(),
+            String::from("A=M-1 // rtr_value addr"),
+            String::from("D=M"),
+            String::from("@ARG"),
+            String::from("A=M // ARG"),
+            String::from("M=D // *ARG = rtr_value"),
+            String::from("D=A"),
+            SP.to_string(),
+            String::from("M=D+1 // SP = ARG + 1"),
+            String::from("@LCL"),
+            String::from("AM=M-1 // LCL - 1"),
+            String::from("D=M // D = THAT"),
+            String::from("@THAT"),
+            String::from("M=D // set THAT"),
+            String::from("@LCL"),
+            String::from("AM=M-1 // LCL - 2"),
+            String::from("D=M // D = THIS"),
+            String::from("@THIS"),
+            String::from("M=D // set THIS"),
+            String::from("@LCL"),
+            String::from("AM=M-1 // LCL - 3"),
+            String::from("D=M // D = ARG"),
+            String::from("@ARG"),
+            String::from("M=D // set ARG"),
+            // Cursed ASM
+            String::from("@LCL // LCL - 3"),
+            String::from("AM=M-1 // LCL - 4"),
+            String::from("D=A // D = LCL - 4"),
+            String::from("D=D+M // D = LCL - 4 + old_LCL value"),
+            String::from("@LCL"),
+            String::from("M=D-M // M = old_LCL value"),
+            String::from("A=D-M // A = LCL - 4"),
+            String::from("A=A-1 // LCL - 5, call_address"),
+            String::from("A=M // A = call_address value"),
+            String::from("0;JMP"),
         ]
     }
 }
@@ -523,5 +589,26 @@ mod tests {
             CodeGen::if_goto_label(&String::from("Main.main"), &String::from("wow")),
             load_asm_file_to_vec("if_goto_Main_main_wow.asm")
         );
+    }
+    #[test]
+    #[allow(non_snake_case)]
+    fn call_f_Main_main_3() {
+        let mut code_gen = CodeGen::default();
+        assert_eq!(
+            code_gen.call(&String::from("f"), &String::from("Main.main"), 3),
+            load_asm_file_to_vec("call_f_Main_main_3.asm")
+        );
+    }
+    #[test]
+    #[allow(non_snake_case)]
+    fn function_Main_main_3() {
+        assert_eq!(
+            CodeGen::function(&String::from("Main.main"), 3),
+            load_asm_file_to_vec("function_Main_main_3.asm")
+        );
+    }
+    #[test]
+    fn f_return() {
+        assert_eq!(CodeGen::f_return(), load_asm_file_to_vec("return.asm"));
     }
 }
