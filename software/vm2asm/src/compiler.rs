@@ -60,13 +60,23 @@ impl Compiler {
             "and" => self.asm.append(&mut CodeGen::and()),
             "or" => self.asm.append(&mut CodeGen::or()),
             "not" => self.asm.append(&mut CodeGen::not()),
-            "return" => self.error(line_source.line, String::from("Not Implemented yet")), // Not implemented yet
+            "return" => self.f_return(line_source),
             _ => self.error(
                 line_source.line,
                 format!("Unknown single command, {}", command),
             ),
         }
     }
+    fn f_return(&mut self, line_source: &LineSource) {
+        if self.function_label_stack.is_empty() {
+            // error, return without function
+            self.error(line_source.line, String::from("return without function"));
+        } else {
+            self.function_label_stack.pop();
+            self.asm.append(&mut CodeGen::f_return());
+        }
+    }
+
     fn double_command(&mut self, line_source: &LineSource) {
         assert!(line_source.tokens.len() == 2);
         let command = &line_source.tokens[0];
@@ -100,6 +110,8 @@ impl Compiler {
         match command.as_str() {
             "pop" => self.pop_segment(line_source),
             "push" => self.push_segment(line_source),
+            "function" => self.function(line_source),
+            "call" => self.call(line_source),
             _ => self.error(
                 line_source.line,
                 format!("Unknown triple command, starting from {}", command),
@@ -209,6 +221,38 @@ impl Compiler {
             }
         }
         true
+    }
+
+    fn function(&mut self, line_source: &LineSource) {
+        assert!(line_source.tokens.len() == 3);
+        let function_name = line_source.tokens[1].clone();
+        let nargs = match line_source.tokens[2].parse::<usize>() {
+            Ok(i) => i,
+            Err(_) => {
+                return self.error(
+                    line_source.line,
+                    format!("Unknown i at {}", line_source.tokens[2]),
+                )
+            }
+        };
+        self.asm
+            .append(&mut CodeGen::function(&function_name, nargs));
+        self.function_label_stack.push(function_name);
+    }
+    fn call(&mut self, line_source: &LineSource) {
+        assert!(line_source.tokens.len() == 3);
+        let function_name = line_source.tokens[1].clone();
+        let nargs = match line_source.tokens[2].parse::<usize>() {
+            Ok(i) => i,
+            Err(_) => {
+                return self.error(
+                    line_source.line,
+                    format!("Unknown i at {}", line_source.tokens[2]),
+                )
+            }
+        };
+        self.asm
+            .append(&mut self.code_gen.call(&self.file_name, &function_name, nargs));
     }
 
     fn error(&mut self, line: usize, msg: String) {
