@@ -368,7 +368,7 @@ impl CodeGen {
             format!("@{}", nargs),
             format!("D=A // D = {}", nargs),
             SP.to_string(),
-            format!("M=M+D // SP = SP + {}", nargs),
+            format!("M=D+M // SP = SP + {}", nargs),
         ]
     }
     pub fn f_return() -> Vec<String> {

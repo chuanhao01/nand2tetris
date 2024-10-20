@@ -3,4 +3,4 @@
 @3
 D=A // D = 3
 @SP
-M=M+D // SP = SP + 3
+M=D+M // SP = SP + 3
