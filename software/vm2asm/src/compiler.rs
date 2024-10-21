@@ -6,7 +6,7 @@ pub struct Compiler {
     file_name: String,
     had_error: bool,
     code_gen: CodeGen,
-    function_label_stack: Vec<String>,
+    current_function_name: String,
 }
 
 impl Compiler {
@@ -18,7 +18,7 @@ impl Compiler {
             file_name,
             had_error: false,
             code_gen: CodeGen::default(),
-            function_label_stack: Vec::default(),
+            current_function_name: String::default(),
         }
     }
 
@@ -60,20 +60,11 @@ impl Compiler {
             "and" => self.asm.append(&mut CodeGen::and()),
             "or" => self.asm.append(&mut CodeGen::or()),
             "not" => self.asm.append(&mut CodeGen::not()),
-            "return" => self.f_return(line_source),
+            "return" => self.asm.append(&mut CodeGen::f_return()),
             _ => self.error(
                 line_source.line,
                 format!("Unknown single command, {}", command),
             ),
-        }
-    }
-    fn f_return(&mut self, line_source: &LineSource) {
-        if self.function_label_stack.is_empty() {
-            // error, return without function
-            self.error(line_source.line, String::from("return without function"));
-        } else {
-            self.function_label_stack.pop();
-            self.asm.append(&mut CodeGen::f_return());
         }
     }
 
@@ -84,20 +75,17 @@ impl Compiler {
         if !Self::is_valid_label(label) {
             return self.error(line_source.line, format!("Invalid label used, {}", label));
         }
-        // If not part of any function, empty label
-        let function_label = if self.function_label_stack.is_empty() {
-            String::new()
-        } else {
-            self.function_label_stack.last().unwrap().to_owned()
-        };
         match command.as_str() {
-            "label" => self.asm.append(&mut CodeGen::label(&function_label, label)),
+            "label" => self
+                .asm
+                .append(&mut CodeGen::label(&self.current_function_name, label)),
             "goto" => self
                 .asm
-                .append(&mut CodeGen::goto_label(&function_label, label)),
-            "if-goto" => self
-                .asm
-                .append(&mut CodeGen::if_goto_label(&function_label, label)),
+                .append(&mut CodeGen::goto_label(&self.current_function_name, label)),
+            "if-goto" => self.asm.append(&mut CodeGen::if_goto_label(
+                &self.current_function_name,
+                label,
+            )),
             _ => self.error(
                 line_source.line,
                 format!("Unknown double command, {}", command),
@@ -237,7 +225,7 @@ impl Compiler {
         };
         self.asm
             .append(&mut CodeGen::function(&function_name, nargs));
-        self.function_label_stack.push(function_name);
+        self.current_function_name = function_name;
     }
     fn call(&mut self, line_source: &LineSource) {
         assert!(line_source.tokens.len() == 3);
