@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub struct SimpleSymbolTable {
-    table: HashMap<String, usize>,
+    pub table: HashMap<String, usize>,
     current_memory: usize,
 }
 impl SimpleSymbolTable {

@@ -37,6 +37,10 @@ impl Simple {
         simple.remove_whtiespace();
         simple.first_pass();
         simple.hack();
+        #[cfg(feature = "debug")]
+        {
+            println!("{:?}", simple.symbol_table.table);
+        }
         if simple.had_error {
             None
         } else {

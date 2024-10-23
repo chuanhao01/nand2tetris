@@ -8,4 +8,4 @@ vm2asm = { path = "../vm2asm" }
 asm2hack = { path = "../asm2hack" }
 
 [features]
-debug = []
+debug = ["asm2hack/debug"]
