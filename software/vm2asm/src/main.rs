@@ -45,7 +45,7 @@ fn compile_file(file_path: &str) -> ProgResult {
             let mut output_file =
                 output_dir.join(file_path.file_stem().expect("Should have a file stem"));
             output_file.set_extension("asm");
-            let mut asm = CodeGen::bootstrap();
+            let mut asm = Vec::new();
             asm.append(&mut assembly.clone());
             fs::write(output_file, asm.join("\n")).map_err(|e| e.to_string())?
         }
