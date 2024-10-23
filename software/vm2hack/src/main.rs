@@ -59,27 +59,17 @@ fn compile_to_hack(file_path: &Path) -> ProgResult {
                 continue;
             }
         }
+        if let Some(entry_file_stem) = entry.path().file_stem() {
+            if let Some(file_name) = file_path.file_name() {
+                if file_name == entry_file_stem {
+                    // Debug asm file, skip
+                    continue;
+                }
+            }
+        }
         let source = fs::read_to_string(entry_path.clone()).expect("Read the file contents");
         sources.push(source);
     }
-
-    // Adding bootstrap code
-    let asm_program_path = file_path.join(format!("{}.asm", program_name));
-    let mut debug_sources = Vec::default();
-    debug_sources.append(&mut Vec::from([
-        String::from("@256"),
-        String::from("D=A"),
-        String::from("@SP"),
-        String::from("M=D"),
-    ]));
-    let mut code_gen = CodeGen::default();
-    debug_sources.append(&mut code_gen.call(
-        &String::from("bootstrap"),
-        &String::from("Sys.init"),
-        0,
-    ));
-    debug_sources.append(&mut sources.clone());
-    fs::write(asm_program_path, debug_sources.join("\n")).map_err(|e| e.to_string())?;
 
     let mut bootstraped_sources = Vec::default();
     bootstraped_sources.append(&mut Vec::from([
@@ -95,6 +85,13 @@ fn compile_to_hack(file_path: &Path) -> ProgResult {
         0,
     ));
     bootstraped_sources.append(&mut sources);
+
+    // Adding bootstrap code
+    #[cfg(feature = "debug")]
+    {
+        let asm_program_path = file_path.join(format!("{}.asm", program_name));
+        fs::write(asm_program_path, bootstraped_sources.join("\n")).map_err(|e| e.to_string())?;
+    }
 
     match Simple::compile(bootstraped_sources.join("\n")) {
         Some(rom) => {

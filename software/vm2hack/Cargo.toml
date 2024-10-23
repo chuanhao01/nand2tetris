@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 vm2asm = { path = "../vm2asm" }
 asm2hack = { path = "../asm2hack" }
+
+[features]
+debug = []
