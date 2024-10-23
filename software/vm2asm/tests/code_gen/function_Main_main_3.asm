@@ -1,6 +1,14 @@
 //function Main.main 3
 (Main.main)
-@3
-D=A // D = 3
 @SP
-M=D+M // SP = SP + 3
+AM=M+1
+A=A-1
+M=0
+@SP
+AM=M+1
+A=A-1
+M=0
+@SP
+AM=M+1
+A=A-1
+M=0

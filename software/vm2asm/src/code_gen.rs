@@ -362,27 +362,40 @@ impl CodeGen {
         ]
     }
     pub fn function(function_name: &String, nargs: usize) -> Vec<String> {
-        vec![
+        let mut asm = vec![
             format!("//function {} {}", function_name, nargs),
             format!("({})", function_name),
-            format!("@{}", nargs),
-            format!("D=A // D = {}", nargs),
-            SP.to_string(),
-            format!("M=D+M // SP = SP + {}", nargs),
-        ]
+        ];
+        for _ in 0..nargs {
+            asm.append(&mut vec![
+                SP.to_string(),
+                String::from("AM=M+1"),
+                String::from("A=A-1"),
+                String::from("M=0"),
+            ]);
+        }
+        asm
     }
     pub fn f_return() -> Vec<String> {
         vec![
             String::from("//return"),
+            String::from("@5"),
+            String::from("D=A"),
+            String::from("@LCL"),
+            String::from("A=M-D // LCL - 5, call_address"),
+            String::from("D=M // D = *call_address"),
             SP.to_string(),
-            String::from("A=M-1 // rtr_value addr"),
-            String::from("D=M"),
+            String::from("A=M"),
+            String::from("M=D // *SP = *call_address"),
+            String::from("A=A-1 // rtr_value addr"),
+            String::from("D=M // D = rtr_value"),
             String::from("@ARG"),
             String::from("A=M // ARG"),
             String::from("M=D // *ARG = rtr_value"),
-            String::from("D=A"),
+            String::from("D=A // D = ARG"),
             SP.to_string(),
-            String::from("M=D+1 // SP = ARG + 1"),
+            String::from("A=M+1 // SP++"),
+            String::from("M=D // *SP++ = ARG"),
             String::from("@LCL"),
             String::from("AM=M-1 // LCL - 1"),
             String::from("D=M // D = THAT"),
@@ -398,16 +411,20 @@ impl CodeGen {
             String::from("D=M // D = ARG"),
             String::from("@ARG"),
             String::from("M=D // set ARG"),
-            // Cursed ASM
             String::from("@LCL // LCL - 3"),
             String::from("AM=M-1 // LCL - 4"),
-            String::from("D=A // D = LCL - 4"),
-            String::from("D=D+M // D = LCL - 4 + old_LCL value"),
+            String::from("D=M // D = LCL"),
             String::from("@LCL"),
-            String::from("M=D-M // M = old_LCL value"),
-            String::from("A=D-M // A = LCL - 4"),
-            String::from("A=A-1 // LCL - 5, call_address"),
-            String::from("A=M // A = call_address value"),
+            String::from("M=D // set LCL"),
+            SP.to_string(),
+            String::from("A=M+1 // SP++ = ARG"),
+            String::from("D=M // D = ARG"),
+            String::from("D=D+A // D = ARG + 1 + SP"),
+            SP.to_string(),
+            // Cursed ASM
+            String::from("M=D-M // M = ARG + 1 + SP - SP"),
+            String::from("A=D-M // A = SP + ARG + 1 - ARG - 1"),
+            String::from("A=M // A = *call_address"),
             String::from("0;JMP"),
         ]
     }

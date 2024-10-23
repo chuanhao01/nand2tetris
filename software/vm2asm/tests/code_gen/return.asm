@@ -1,13 +1,21 @@
 //return
+@5
+D=A
+@LCL
+A=M-D // LCL - 5, call_address
+D=M // D = *call_address
 @SP
-A=M-1 // rtr_value addr
-D=M
+A=M
+M=D // *SP = *call_address
+A=A-1 // rtr_value addr
+D=M // D = rtr_value
 @ARG
 A=M // ARG
 M=D // *ARG = rtr_value
-D=A
+D=A // D = ARG
 @SP
-M=D+1 // SP = ARG + 1
+A=M+1 // SP++
+M=D // *SP++ = ARG
 @LCL
 AM=M-1 // LCL - 1
 D=M // D = THAT
@@ -25,11 +33,15 @@ D=M // D = ARG
 M=D // set ARG
 @LCL // LCL - 3
 AM=M-1 // LCL - 4
-D=A // D = LCL - 4
-D=D+M // D = LCL - 4 + old_LCL value
+D=M // D = LCL
 @LCL
-M=D-M // M = old_LCL value
-A=D-M // A = LCL - 4
-A=A-1 // LCL - 5, call_address
-A=M // A = call_address value
+M=D // set LCL
+@SP
+A=M+1 // SP++ = ARG
+D=M // D = ARG
+D=D+A // D = ARG + 1 + SP
+@SP
+M=D-M // M = ARG + 1 + SP - SP
+A=D-M // A = SP + ARG + 1 - ARG - 1
+A=M // A = *call_address
 0;JMP
