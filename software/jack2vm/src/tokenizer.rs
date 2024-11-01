@@ -14,7 +14,7 @@ impl Tokenizer {
             line: 1,
         }
     }
-    pub fn generate_tokens(source: &String) -> Result<Vec<Token>, String> {
+    pub fn generate_tokens(source: &str) -> Result<Vec<Token>, String> {
         let source = source.chars().collect::<Vec<char>>();
         let mut tokens: Vec<Token> = Vec::new();
         let mut tokenizer = Self::new();
