@@ -436,9 +436,44 @@ mod tests {
             output.clone().unwrap()[0]._type,
             TokenType::Identifier
         ));
+        assert!(matches!(output.clone().unwrap()[1]._type, TokenType::EOF));
         assert_eq!(
             "abc",
             output.unwrap()[0].get_source(&source.chars().collect::<Vec<char>>())
         )
+    }
+    #[test]
+    fn generate_tokens_numbers() {
+        let source = "-21".to_string();
+        let output = Tokenizer::generate_tokens(&source);
+        assert!(output.is_ok());
+        assert_eq!(output.clone().unwrap().len(), 3);
+        assert!(matches!(
+            output.clone().unwrap()[0]._type,
+            TokenType::Symbol(Symbols::Minus)
+        ));
+        assert!(matches!(
+            output.clone().unwrap()[1]._type,
+            TokenType::Integer(21)
+        ));
+    }
+    #[test]
+    fn generate_keywords() {
+        let source = "class let boolean".to_string();
+        let output = Tokenizer::generate_tokens(&source);
+        assert!(output.is_ok());
+        assert_eq!(output.clone().unwrap().len(), 4);
+        assert!(matches!(
+            output.clone().unwrap()[0]._type,
+            TokenType::Keyword(ReservedKeywords::Class)
+        ));
+        assert!(matches!(
+            output.clone().unwrap()[1]._type,
+            TokenType::Keyword(ReservedKeywords::Let)
+        ));
+        assert!(matches!(
+            output.clone().unwrap()[2]._type,
+            TokenType::Keyword(ReservedKeywords::Boolean)
+        ));
     }
 }
