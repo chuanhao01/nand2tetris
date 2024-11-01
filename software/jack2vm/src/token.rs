@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct Token {
     pub _type: TokenType,
     pub start: usize,
@@ -20,6 +21,7 @@ impl Token {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum TokenType {
     Keyword(ReservedKeywords),
     Symbol(Symbols),
@@ -29,6 +31,7 @@ pub enum TokenType {
     EOF,
 }
 
+#[derive(Debug, Clone)]
 pub enum ReservedKeywords {
     Class,
     Constructor,
@@ -53,6 +56,7 @@ pub enum ReservedKeywords {
     Return,
 }
 
+#[derive(Debug, Clone)]
 pub enum Symbols {
     LeftParam,    // (
     RightParam,   // )
@@ -73,4 +77,5 @@ pub enum Symbols {
     Comma,        // ,
     Asterisk,     // *
     Slash,        // /
+    Dot,          // .
 }
