@@ -90,13 +90,7 @@ impl Tokenizer {
                             '*' => {
                                 self.current += 2; // Skip /*
                                 loop {
-                                    if self.is_at_end(source) {
-                                        return Some(format!(
-                                            "Expected opened comment at {} to close",
-                                            self.start
-                                        ));
-                                    }
-                                    while self.peek(source) != '*' {
+                                    while !self.is_at_end(source) && self.peek(source) != '*' {
                                         self.advance(source);
                                     }
                                     if let Some(closing_c) = self.peek_next(source) {
@@ -109,8 +103,8 @@ impl Tokenizer {
                                         }
                                     } else {
                                         return Some(format!(
-                                            "Expected opened comment at {} to be closed at {}",
-                                            self.start, self.current
+                                            "Expected comment opened at {}, to close",
+                                            self.start
                                         ));
                                     }
                                 }
@@ -188,13 +182,42 @@ mod tests {
         assert!(output.is_none());
     }
     #[test]
+    fn not_closed_comment() {
+        let mut tokenizer = Tokenizer::new();
+        let source = "/** wow a funny * comment";
+        let source = source.chars().collect::<Vec<char>>();
+        let output = tokenizer.skip_whitespace_and_comments(&source);
+        assert_eq!(tokenizer.current, 25);
+        assert!(output.is_some());
+        assert_eq!(output.unwrap(), "Expected comment opened at 0, to close");
+    }
+    #[test]
     fn scan_whitespace() {
         let mut tokenizer = Tokenizer::new();
         let source = "  \n  \n";
         let source = source.chars().collect::<Vec<char>>();
         let output = tokenizer.scan_token(&source);
-        assert_eq!(tokenizer.current, 6);
         assert!(output.is_ok());
         assert!(matches!(output.unwrap()._type, TokenType::EOF));
+
+        let mut tokenizer = Tokenizer::new();
+        let source = "// wow funny \n";
+        let source = source.chars().collect::<Vec<char>>();
+        let output = tokenizer.scan_token(&source);
+        assert_eq!(tokenizer.line, 2);
+        assert!(output.is_ok());
+        assert!(matches!(output.unwrap()._type, TokenType::EOF));
+    }
+    #[test]
+    fn scan_not_closed_comment() {
+        let mut tokenizer = Tokenizer::new();
+        let source = "/** wow a funny * comment";
+        let source = source.chars().collect::<Vec<char>>();
+        let output = tokenizer.scan_token(&source);
+        assert!(output.is_err());
+        assert_eq!(
+            output.err().unwrap(),
+            "Expected comment opened at 0, to close"
+        );
     }
 }
