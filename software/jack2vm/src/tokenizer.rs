@@ -467,6 +467,8 @@ mod tests {
             output.clone().unwrap()[0]._type,
             TokenType::Keyword(ReservedKeywords::Class)
         ));
+        assert!(matches!(output.clone().unwrap()[0].start, 0));
+        assert!(matches!(output.clone().unwrap()[0].length, 5));
         assert!(matches!(
             output.clone().unwrap()[1]._type,
             TokenType::Keyword(ReservedKeywords::Let)
