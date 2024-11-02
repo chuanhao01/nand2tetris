@@ -78,7 +78,7 @@ impl Parser {
             TokenType::EOF => panic!("Should not be pushing EOF terminal"),
         };
         self.ast.push(format!("<{}>", _type));
-        // self.ast.push()
+        self.ast.push(token.get_source(source));
         self.ast.push(format!("</{}>", _type));
     }
 
@@ -132,5 +132,31 @@ mod tests {
             Parser::check_token_type(token, TokenType::Keyword(ReservedKeywords::Do), &source);
         println!("{:?}", output);
         assert_eq!(output, "Expected Keyword(Do), got class on line 2");
+    }
+    #[test]
+    fn push_terminal_ast() {
+        let source = "let".chars().collect::<Vec<char>>();
+        let token = Token {
+            _type: TokenType::Keyword(ReservedKeywords::Let),
+            start: 0,
+            length: 3,
+            line: 1,
+        };
+        let mut parser = Parser::new();
+        parser.push_terminal(&token, &source);
+        assert_eq!(parser.ast.len(), 3);
+        assert_eq!(parser.ast[1], "let");
+
+        let source = "\"funny string\"".chars().collect::<Vec<char>>();
+        let token = Token {
+            _type: TokenType::String,
+            start: 0,
+            length: 14,
+            line: 1,
+        };
+        let mut parser = Parser::new();
+        parser.push_terminal(&token, &source);
+        assert_eq!(parser.ast.len(), 3);
+        assert_eq!(parser.ast[1], "funny string");
     }
 }
