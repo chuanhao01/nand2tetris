@@ -2,6 +2,19 @@ use crate::{ReservedKeywords, Symbols, Token, TokenType};
 
 type ParserReturn = Result<(), String>;
 
+// Forbidden arts
+// macro_rules! consume_single_terminal_token {
+//     ($val:token, $var:token_type) => {
+//         match $val._type {
+//             $var => {}
+//             _ => {
+//                 return Err(Self::error_expected_token_type(&token, &[], source));
+//             }
+//         }
+//         self.push_terminal(&token, source);
+//     };
+// }
+
 /// Funny design decision
 /// For the tokenizer we had to worry about over advancing and peeking
 /// But since we have EOF token at the end
@@ -269,6 +282,7 @@ impl Parser {
         }
 
         // statements
+        self.statements(tokens, source)?;
 
         // '}'
         let token = self.advance(tokens, source)?;
@@ -433,6 +447,124 @@ impl Parser {
 
     // Statements
     fn statements(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<statements>".to_string());
+        loop {
+            let token = self.peek(tokens);
+            match token._type {
+                TokenType::Keyword(
+                    ReservedKeywords::Let
+                    | ReservedKeywords::If
+                    | ReservedKeywords::While
+                    | ReservedKeywords::Do
+                    | ReservedKeywords::Return,
+                ) => {
+                    self.statement(tokens, source)?;
+                }
+                _ => break,
+            }
+        }
+
+        self.ast.push("</statements>".to_string());
+        Ok(())
+    }
+    fn statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        let token = self.peek(tokens);
+        match token._type {
+            TokenType::Keyword(ReservedKeywords::Let) => {
+                self.let_statement(tokens, source)?;
+            }
+            TokenType::Keyword(ReservedKeywords::If) => {
+                self.if_statement(tokens, source)?;
+            }
+            TokenType::Keyword(ReservedKeywords::While) => {
+                self.while_statement(tokens, source)?;
+            }
+            TokenType::Keyword(ReservedKeywords::Do) => {
+                self.do_statement(tokens, source)?;
+            }
+            TokenType::Keyword(ReservedKeywords::Return) => {
+                self.return_statement(tokens, source)?
+            }
+            _ => {
+                return Err(Self::error_expected_token_type(
+                    &token,
+                    &[
+                        TokenType::Keyword(ReservedKeywords::Let),
+                        TokenType::Keyword(ReservedKeywords::If),
+                        TokenType::Keyword(ReservedKeywords::While),
+                        TokenType::Keyword(ReservedKeywords::Do),
+                        TokenType::Keyword(ReservedKeywords::Return),
+                    ],
+                    source,
+                ));
+            }
+        }
+        Ok(())
+    }
+    fn let_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<letStatement>".to_string());
+
+        // 'let'
+        let token = self.advance(tokens, source)?;
+        match token._type {
+            TokenType::Keyword(ReservedKeywords::Let) => {}
+            _ => {
+                return Err(Self::error_expected_token_type(
+                    &token,
+                    &[TokenType::Keyword(ReservedKeywords::Let)],
+                    source,
+                ));
+            }
+        }
+        self.push_terminal(&token, source);
+
+        // varName
+        self.identifier(tokens, source)?;
+
+        // ('[' expression ']')?
+        let token = self.peek(tokens);
+        match token._type {
+            TokenType::Symbol(Symbols::LeftBracket) => {
+                // '['
+                let token = self.advance(tokens, source)?;
+                match token._type {
+                    TokenType::Symbol(Symbols::LeftBracket) => {}
+                    _ => {
+                        return Err(Self::error_expected_token_type(
+                            &token,
+                            &[TokenType::Symbol(Symbols::LeftBracket)],
+                            source,
+                        ));
+                    }
+                }
+                self.push_terminal(&token, source);
+            }
+            _ => {
+                // Skip
+            }
+        }
+
+        self.ast.push("</letStatement>".to_string());
+        Ok(())
+    }
+    fn if_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<ifStatement>".to_string());
+        self.ast.push("</ifStatement>".to_string());
+        Ok(())
+    }
+    fn while_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<whileStatement>".to_string());
+        self.ast.push("</whileStatement>".to_string());
+        Ok(())
+    }
+    fn do_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<doStatement>".to_string());
+        self.ast.push("</doStatement>".to_string());
+        Ok(())
+    }
+    fn return_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<returnStatement>".to_string());
+        self.ast.push("</returnStatement>".to_string());
         Ok(())
     }
 
