@@ -132,7 +132,7 @@ impl Parser {
         // Consume varName, ignored
         self.identifier(tokens, source)?;
 
-        // *(',' varName)
+        // (',' varName)*
         loop {
             let token = self.peek(tokens);
             match token._type {
@@ -234,7 +234,111 @@ impl Parser {
         }
         self.push_terminal(&token, source);
 
+        // subroutineBody
+        self.subroutine_body(tokens, source)?;
+
         self.ast.push("</subroutineDec>".to_string());
+        Ok(())
+    }
+    fn subroutine_body(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<subroutineBody>".to_string());
+
+        // '{'
+        let token = self.advance(tokens, source)?;
+        match token._type {
+            TokenType::Symbol(Symbols::LeftBrace) => {}
+            _ => {
+                return Err(Self::error_expected_token_type(
+                    &token,
+                    &[TokenType::Symbol(Symbols::LeftBrace)],
+                    source,
+                ))
+            }
+        }
+        self.push_terminal(&token, source);
+
+        // varDec*
+        loop {
+            let token = self.peek(tokens);
+            match token._type {
+                TokenType::Keyword(ReservedKeywords::Var) => {
+                    self.var_dec(tokens, source)?;
+                }
+                _ => break,
+            }
+        }
+
+        // statements
+
+        // '}'
+        let token = self.advance(tokens, source)?;
+        match token._type {
+            TokenType::Symbol(Symbols::RightBrace) => {}
+            _ => {
+                return Err(Self::error_expected_token_type(
+                    &token,
+                    &[TokenType::Symbol(Symbols::RightBrace)],
+                    source,
+                ))
+            }
+        }
+        self.push_terminal(&token, source);
+
+        self.ast.push("</subroutineBody>".to_string());
+        Ok(())
+    }
+    fn var_dec(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<varDec>".to_string());
+
+        // 'var'
+        let token = self.advance(tokens, source)?;
+        match token._type {
+            TokenType::Keyword(ReservedKeywords::Var) => {}
+            _ => {
+                return Err(Self::error_expected_token_type(
+                    &token,
+                    &[TokenType::Keyword(ReservedKeywords::Var)],
+                    source,
+                ))
+            }
+        }
+        self.push_terminal(&token, source);
+
+        // type
+        self._type(tokens, source)?;
+
+        // varName, ignored
+        self.identifier(tokens, source)?;
+
+        // (',' varName)*
+        loop {
+            let token = self.peek(tokens);
+            match token._type {
+                TokenType::Symbol(Symbols::Comma) => {
+                    self.push_terminal(&token, source);
+                    self.advance(tokens, source)?;
+                }
+                _ => break,
+            }
+            // If we are consume more varNames
+            self.identifier(tokens, source)?;
+        }
+
+        // ';'
+        let token = self.advance(tokens, source)?;
+        match token._type {
+            TokenType::Symbol(Symbols::SemiColon) => {}
+            _ => {
+                return Err(Self::error_expected_token_type(
+                    &token,
+                    &[TokenType::Symbol(Symbols::SemiColon)],
+                    source,
+                ));
+            }
+        }
+        self.push_terminal(&token, source);
+
+        self.ast.push("</varDec>".to_string());
         Ok(())
     }
     fn parameter_list(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -325,6 +429,11 @@ impl Parser {
         self.ast.push(format!("<{}>", _type));
         self.ast.push(token.get_source(source));
         self.ast.push(format!("</{}>", _type));
+    }
+
+    // Statements
+    fn statements(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        Ok(())
     }
 
     fn advance(&mut self, tokens: &[Token], source: &[char]) -> Result<Token, String> {
