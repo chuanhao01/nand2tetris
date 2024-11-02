@@ -1,6 +1,6 @@
 use crate::{ReservedKeywords, Symbols, Token, TokenType};
 
-struct Tokenizer {
+pub struct Tokenizer {
     start: usize,
     current: usize,
     line: usize,
@@ -33,7 +33,7 @@ impl Tokenizer {
         }
         Ok(tokens)
     }
-    fn scan_token(&mut self, source: &Vec<char>) -> Result<Token, String> {
+    fn scan_token(&mut self, source: &[char]) -> Result<Token, String> {
         if let Some(err) = self.skip_whitespace_and_comments(source) {
             return Err(err);
         };
@@ -79,13 +79,13 @@ impl Tokenizer {
             }
         }
     }
-    fn is_at_end(&mut self, source: &Vec<char>) -> bool {
+    fn is_at_end(&mut self, source: &[char]) -> bool {
         self.current >= source.len()
     }
     fn is_alpha(c: char) -> bool {
         c.is_alphabetic() || c == '_'
     }
-    fn identifier(&mut self, source: &Vec<char>) -> Result<Token, String> {
+    fn identifier(&mut self, source: &[char]) -> Result<Token, String> {
         // Take chars if its still alpha or numeric
         while !self.is_at_end(source)
             && (Self::is_alpha(self.peek(source)) || self.peek(source).is_numeric())
@@ -118,7 +118,7 @@ impl Tokenizer {
             _ => Ok(self.make_token(TokenType::Identifier)),
         }
     }
-    fn integer(&mut self, source: &Vec<char>) -> Result<Token, String> {
+    fn integer(&mut self, source: &[char]) -> Result<Token, String> {
         // Take chars if its  numeric
         while !self.is_at_end(source) && self.peek(source).is_numeric() {
             self.advance(source);
@@ -140,12 +140,11 @@ impl Tokenizer {
             }
             Err(e) => Err(format!(
                 "Failed to tokenize integer at {}, {}",
-                self.start,
-                e.to_string()
+                self.start, e
             )),
         }
     }
-    fn string(&mut self, source: &Vec<char>) -> Result<Token, String> {
+    fn string(&mut self, source: &[char]) -> Result<Token, String> {
         while !self.is_at_end(source) && self.peek(source) != '\"' {
             self.advance(source);
         }
@@ -163,7 +162,7 @@ impl Tokenizer {
         Token::new(_type, self.start, self.current - self.start, self.line)
     }
     // Moves pointer forward, returns the current char
-    fn advance(&mut self, source: &Vec<char>) -> Option<char> {
+    fn advance(&mut self, source: &[char]) -> Option<char> {
         self.current += 1;
         if self.current > source.len() {
             None
@@ -171,21 +170,21 @@ impl Tokenizer {
             Some(source[self.current - 1])
         }
     }
-    fn peek(&self, source: &Vec<char>) -> char {
+    fn peek(&self, source: &[char]) -> char {
         // Will never fail, as calls to peek should be on a valid character
         source[self.current]
     }
-    fn peek_n(&self, source: &Vec<char>, n: usize) -> Option<char> {
+    fn peek_n(&self, source: &[char], n: usize) -> Option<char> {
         if self.current + n >= source.len() {
             None
         } else {
             Some(source[self.current + n])
         }
     }
-    fn peek_next(&self, source: &Vec<char>) -> Option<char> {
+    fn peek_next(&self, source: &[char]) -> Option<char> {
         self.peek_n(source, 1)
     }
-    fn skip_whitespace_and_comments(&mut self, source: &Vec<char>) -> Option<String> {
+    fn skip_whitespace_and_comments(&mut self, source: &[char]) -> Option<String> {
         loop {
             if self.is_at_end(source) {
                 return None;
