@@ -3,17 +3,35 @@ use crate::{ReservedKeywords, Symbols, Token, TokenType};
 type ParserReturn = Result<(), String>;
 
 // Forbidden arts
-// macro_rules! consume_single_terminal_token {
-//     ($val:token, $var:token_type) => {
-//         match $val._type {
-//             $var => {}
-//             _ => {
-//                 return Err(Self::error_expected_token_type(&token, &[], source));
-//             }
-//         }
-//         self.push_terminal(&token, source);
-//     };
+// Used to help writing code that check and consumes a terminal token
+// Creates:
+//
+// match token._type {
+//     TokenType::Symbol(Symbols::RightBrace) => {}
+//     _ => {
+//         return Err(Self::error_expected_token_type(
+//             &token,
+//             &[TokenType::Symbol(Symbols::RightBrace)],
+//             source,
+//         ));
+//     }
 // }
+// self.push_terminal(&token, source);
+macro_rules! consume_single_terminal_token {
+    ($self:ident, $token:ident, $_type_p:pat, $_type_e:expr, $source:ident) => {
+        match $token._type {
+            $_type_p => {}
+            _ => {
+                return Err(Parser::error_expected_token_type(
+                    &$token,
+                    &[$_type_e],
+                    $source,
+                ));
+            }
+        }
+        $self.push_terminal(&$token, $source);
+    };
+}
 
 /// Funny design decision
 /// For the tokenizer we had to worry about over advancing and peeking
@@ -53,28 +71,26 @@ impl Parser {
 
         // Consume class
         let token = self.advance(tokens, source)?;
-        if !matches!(token._type, TokenType::Keyword(ReservedKeywords::Class)) {
-            return Err(Self::error_expected_token_type(
-                &token,
-                &[TokenType::Keyword(ReservedKeywords::Class)],
-                source,
-            ));
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Keyword(ReservedKeywords::Class),
+            TokenType::Keyword(ReservedKeywords::Class),
+            source
+        );
 
         // Consume className, ignored
         self.identifier(tokens, source)?;
 
         // Consume '{'
         let token = self.advance(tokens, source)?;
-        if !matches!(token._type, TokenType::Symbol(Symbols::LeftBrace)) {
-            return Err(Self::error_expected_token_type(
-                &token,
-                &[TokenType::Symbol(Symbols::LeftBrace)],
-                source,
-            ));
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftBrace),
+            TokenType::Symbol(Symbols::LeftBrace),
+            source
+        );
 
         // Check for 0 or more classVarDec
         loop {
@@ -104,17 +120,13 @@ impl Parser {
 
         // '}'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Symbol(Symbols::RightBrace) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Symbol(Symbols::RightBrace)],
-                    source,
-                ));
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightBrace),
+            TokenType::Symbol(Symbols::RightBrace),
+            source
+        );
 
         self.ast.push("</class>".to_string());
         Ok(())
@@ -161,17 +173,13 @@ impl Parser {
 
         // ';'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Symbol(Symbols::SemiColon) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Symbol(Symbols::SemiColon)],
-                    source,
-                ));
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::SemiColon),
+            TokenType::Symbol(Symbols::SemiColon),
+            source
+        );
 
         self.ast.push("</classVarDec>".to_string());
         Ok(())
@@ -218,34 +226,26 @@ impl Parser {
 
         // '('
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Symbol(Symbols::LeftParam) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Symbol(Symbols::LeftParam)],
-                    source,
-                ))
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftParam),
+            TokenType::Symbol(Symbols::LeftParam),
+            source
+        );
 
         // parameterList
         self.parameter_list(tokens, source)?;
 
         // ')'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Symbol(Symbols::RightParam) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Symbol(Symbols::RightParam)],
-                    source,
-                ))
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightParam),
+            TokenType::Symbol(Symbols::RightParam),
+            source
+        );
 
         // subroutineBody
         self.subroutine_body(tokens, source)?;
@@ -258,17 +258,13 @@ impl Parser {
 
         // '{'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Symbol(Symbols::LeftBrace) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Symbol(Symbols::LeftBrace)],
-                    source,
-                ))
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftBrace),
+            TokenType::Symbol(Symbols::LeftBrace),
+            source
+        );
 
         // varDec*
         loop {
@@ -286,17 +282,13 @@ impl Parser {
 
         // '}'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Symbol(Symbols::RightBrace) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Symbol(Symbols::RightBrace)],
-                    source,
-                ))
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightBrace),
+            TokenType::Symbol(Symbols::RightBrace),
+            source
+        );
 
         self.ast.push("</subroutineBody>".to_string());
         Ok(())
@@ -306,17 +298,13 @@ impl Parser {
 
         // 'var'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Keyword(ReservedKeywords::Var) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Keyword(ReservedKeywords::Var)],
-                    source,
-                ))
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Keyword(ReservedKeywords::Var),
+            TokenType::Keyword(ReservedKeywords::Var),
+            source
+        );
 
         // type
         self._type(tokens, source)?;
@@ -340,17 +328,13 @@ impl Parser {
 
         // ';'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Symbol(Symbols::SemiColon) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Symbol(Symbols::SemiColon)],
-                    source,
-                ));
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::SemiColon),
+            TokenType::Symbol(Symbols::SemiColon),
+            source
+        );
 
         self.ast.push("</varDec>".to_string());
         Ok(())
