@@ -490,17 +490,13 @@ impl Parser {
 
         // 'let'
         let token = self.advance(tokens, source)?;
-        match token._type {
-            TokenType::Keyword(ReservedKeywords::Let) => {}
-            _ => {
-                return Err(Self::error_expected_token_type(
-                    &token,
-                    &[TokenType::Keyword(ReservedKeywords::Let)],
-                    source,
-                ));
-            }
-        }
-        self.push_terminal(&token, source);
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Keyword(ReservedKeywords::Let),
+            TokenType::Keyword(ReservedKeywords::Let),
+            source
+        );
 
         // varName
         self.identifier(tokens, source)?;
@@ -511,33 +507,198 @@ impl Parser {
             TokenType::Symbol(Symbols::LeftBracket) => {
                 // '['
                 let token = self.advance(tokens, source)?;
-                match token._type {
-                    TokenType::Symbol(Symbols::LeftBracket) => {}
-                    _ => {
-                        return Err(Self::error_expected_token_type(
-                            &token,
-                            &[TokenType::Symbol(Symbols::LeftBracket)],
-                            source,
-                        ));
-                    }
-                }
-                self.push_terminal(&token, source);
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::LeftBracket),
+                    TokenType::Symbol(Symbols::LeftBracket),
+                    source
+                );
+
+                // expression
+                self.expression(tokens, source)?;
+
+                // ']'
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::RightBracket),
+                    TokenType::Symbol(Symbols::RightBracket),
+                    source
+                );
             }
             _ => {
                 // Skip
             }
         }
 
+        // '='
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::Equal),
+            TokenType::Symbol(Symbols::Equal),
+            source
+        );
+
+        self.expression(tokens, source)?;
+
+        // ';'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::SemiColon),
+            TokenType::Symbol(Symbols::SemiColon),
+            source
+        );
+
         self.ast.push("</letStatement>".to_string());
         Ok(())
     }
     fn if_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.ast.push("<ifStatement>".to_string());
+
+        // 'if'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Keyword(ReservedKeywords::If),
+            TokenType::Keyword(ReservedKeywords::If),
+            source
+        );
+
+        // '('
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftParam),
+            TokenType::Symbol(Symbols::LeftParam),
+            source
+        );
+
+        self.expression(tokens, source)?;
+
+        // ')'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightParam),
+            TokenType::Symbol(Symbols::RightParam),
+            source
+        );
+
+        // Consume '{'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftBrace),
+            TokenType::Symbol(Symbols::LeftBrace),
+            source
+        );
+
+        // '{'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftBrace),
+            TokenType::Symbol(Symbols::LeftBrace),
+            source
+        );
+
+        self.statements(tokens, source)?;
+
+        // '}'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightBrace),
+            TokenType::Symbol(Symbols::RightBrace),
+            source
+        );
+
+        // ()?
+        let token = self.peek(tokens);
+        match token._type {
+            // 'else'
+            TokenType::Keyword(ReservedKeywords::Else) => {
+                self.push_terminal(&token, source);
+                self.advance(tokens, source)?;
+            }
+            _ => {
+                // Skip since there is no else
+                return Ok(());
+            }
+        }
+
+        // Continue to consume since we took else
+        // '{'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftBrace),
+            TokenType::Symbol(Symbols::LeftBrace),
+            source
+        );
+
+        self.statements(tokens, source)?;
+
+        // '}'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightBrace),
+            TokenType::Symbol(Symbols::RightBrace),
+            source
+        );
+
         self.ast.push("</ifStatement>".to_string());
         Ok(())
     }
     fn while_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.ast.push("<whileStatement>".to_string());
+        // 'while'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Keyword(ReservedKeywords::While),
+            TokenType::Keyword(ReservedKeywords::While),
+            source
+        );
+
+        // '('
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftParam),
+            TokenType::Symbol(Symbols::LeftParam),
+            source
+        );
+
+        self.expression(tokens, source)?;
+
+        // ')'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightParam),
+            TokenType::Symbol(Symbols::RightParam),
+            source
+        );
+
         self.ast.push("</whileStatement>".to_string());
         Ok(())
     }
@@ -549,6 +710,11 @@ impl Parser {
     fn return_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.ast.push("<returnStatement>".to_string());
         self.ast.push("</returnStatement>".to_string());
+        Ok(())
+    }
+
+    // Expressions
+    fn expression(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         Ok(())
     }
 
