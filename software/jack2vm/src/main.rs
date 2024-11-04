@@ -1,5 +1,7 @@
 use std::{env, fs, path::Path};
 
+use jack2vm::Parser;
+
 type ProgResult = Result<(), String>;
 
 fn compile_file(file_path: &str) -> ProgResult {
@@ -22,6 +24,10 @@ fn compile_file(file_path: &str) -> ProgResult {
         }
     }
     let source = fs::read_to_string(file_path).expect("Read the file contents");
+    let ast = Parser::parse(&source)?;
+    let mut ast_file_path = file_path.to_path_buf();
+    ast_file_path.set_extension("xml");
+    fs::write(ast_file_path, ast).map_err(|e| e.to_string())?;
 
     Ok(())
 }

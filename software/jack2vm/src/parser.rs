@@ -1,4 +1,4 @@
-use crate::{ReservedKeywords, Symbols, Token, TokenType};
+use crate::{ReservedKeywords, Symbols, Token, TokenType, Tokenizer};
 
 type ParserReturn = Result<(), String>;
 
@@ -41,27 +41,30 @@ macro_rules! consume_single_terminal_token {
 ///
 /// Example where this needs to be considered is that when peeking to check if we need to consume 0 or more tokens,
 /// we do no need to worry about not having any more tokens to consume
+#[derive(Default)]
 pub struct Parser {
     current: usize,
     ast: Vec<String>,
 }
 impl Parser {
     pub fn new() -> Self {
-        Self {
-            ast: Vec::new(),
-            current: 0,
-        }
+        Self::default()
     }
-    pub fn parse(&mut self, tokens: &[Token], source: &str) -> Result<String, String> {
+    pub fn parse(source: &str) -> Result<String, String> {
+        let tokens = Tokenizer::generate_tokens(source)?;
         let source = source.chars().collect::<Vec<char>>();
+        let mut parser = Parser::new();
+        parser.parse_tokens(&tokens, &source)
+    }
+    fn parse_tokens(&mut self, tokens: &[Token], source: &[char]) -> Result<String, String> {
         // Returns XML string to write to file
         let token = &tokens[self.current];
         if let TokenType::Keyword(ReservedKeywords::Class) = token._type {
-            self.class(tokens, &source)?;
+            self.class(tokens, source)?;
         } else {
             return Err(format!(
                 "Expected to start with class, got {}",
-                token.get_source(&source)
+                token.get_source(source)
             ));
         }
         Ok(self.ast.join("\n"))
@@ -93,29 +96,18 @@ impl Parser {
         );
 
         // Check for 0 or more classVarDec
-        loop {
-            let p_token = self.peek(tokens);
-            match p_token._type {
-                TokenType::Keyword(ReservedKeywords::Static | ReservedKeywords::Field) => {
-                    self.class_var_dec(tokens, source)?;
-                }
-                _ => break,
-            }
+        while let TokenType::Keyword(ReservedKeywords::Static | ReservedKeywords::Field) =
+            self.peek(tokens)._type
+        {
+            self.class_var_dec(tokens, source)?;
         }
 
         // subroutineDec*
-        loop {
-            let p_token = self.peek(tokens);
-            match p_token._type {
-                TokenType::Keyword(
-                    ReservedKeywords::Constructor
-                    | ReservedKeywords::Function
-                    | ReservedKeywords::Method,
-                ) => {
-                    self.subroutine_dec(tokens, source)?;
-                }
-                _ => break,
-            }
+        while let TokenType::Keyword(
+            ReservedKeywords::Constructor | ReservedKeywords::Function | ReservedKeywords::Method,
+        ) = self.peek(tokens)._type
+        {
+            self.subroutine_dec(tokens, source)?;
         }
 
         // '}'
@@ -158,16 +150,11 @@ impl Parser {
         self.identifier(tokens, source)?;
 
         // (',' varName)*
-        loop {
-            let token = self.peek(tokens);
-            match token._type {
-                TokenType::Symbol(Symbols::Comma) => {
-                    self.push_terminal(&token, source);
-                    self.advance(tokens, source)?;
-                }
-                _ => break,
-            }
-            // If we are consume more varNames
+        while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
+            // ','
+            let token = self.advance(tokens, source)?;
+            self.push_terminal(&token, source);
+            // varName
             self.identifier(tokens, source)?;
         }
 
@@ -267,14 +254,8 @@ impl Parser {
         );
 
         // varDec*
-        loop {
-            let token = self.peek(tokens);
-            match token._type {
-                TokenType::Keyword(ReservedKeywords::Var) => {
-                    self.var_dec(tokens, source)?;
-                }
-                _ => break,
-            }
+        while let TokenType::Keyword(ReservedKeywords::Var) = self.peek(tokens)._type {
+            self.var_dec(tokens, source)?;
         }
 
         // statements
@@ -313,16 +294,11 @@ impl Parser {
         self.identifier(tokens, source)?;
 
         // (',' varName)*
-        loop {
-            let token = self.peek(tokens);
-            match token._type {
-                TokenType::Symbol(Symbols::Comma) => {
-                    self.push_terminal(&token, source);
-                    self.advance(tokens, source)?;
-                }
-                _ => break,
-            }
-            // If we are consume more varNames
+        while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
+            // ','
+            let token = self.advance(tokens, source)?;
+            self.push_terminal(&token, source);
+            // varName
             self.identifier(tokens, source)?;
         }
 
@@ -342,33 +318,24 @@ impl Parser {
     fn parameter_list(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.ast.push("<parameterList>".to_string());
         // ()?
-        let token = self.peek(tokens);
-        match token._type {
-            TokenType::Keyword(
-                ReservedKeywords::Int | ReservedKeywords::Char | ReservedKeywords::Boolean,
-            )
-            | TokenType::Identifier => {
-                self._type(tokens, source)?;
-            }
-            // Skip parameter_list
-            _ => return Ok(()),
-        }
-        // We have taken type, varName
-        self.identifier(tokens, source)?;
-
-        // (',' type varName)*
-        loop {
-            let token = self.peek(tokens);
-            match token._type {
-                TokenType::Symbol(Symbols::Comma) => {
-                    self.push_terminal(&token, source);
-                    self.advance(tokens, source)?;
-                }
-                _ => break,
-            }
-            // If we are consume more
+        if let TokenType::Keyword(
+            ReservedKeywords::Int | ReservedKeywords::Char | ReservedKeywords::Boolean,
+        )
+        | TokenType::Identifier = self.peek(tokens)._type
+        {
             self._type(tokens, source)?;
             self.identifier(tokens, source)?;
+
+            // (',' type varName)*
+            while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
+                // ','
+                let token = self.advance(tokens, source)?;
+                self.push_terminal(&token, source);
+                // type
+                self._type(tokens, source)?;
+                // varName
+                self.identifier(tokens, source)?;
+            }
         }
 
         self.ast.push("</parameterList>".to_string());
@@ -430,6 +397,9 @@ impl Parser {
     }
 
     // Statements
+    // NOTE:
+    // Could combine with self.statement
+    // Match on every type, then call it
     fn statements(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.ast.push("<statements>".to_string());
         loop {
@@ -502,35 +472,29 @@ impl Parser {
         self.identifier(tokens, source)?;
 
         // ('[' expression ']')?
-        let token = self.peek(tokens);
-        match token._type {
-            TokenType::Symbol(Symbols::LeftBracket) => {
-                // '['
-                let token = self.advance(tokens, source)?;
-                consume_single_terminal_token!(
-                    self,
-                    token,
-                    TokenType::Symbol(Symbols::LeftBracket),
-                    TokenType::Symbol(Symbols::LeftBracket),
-                    source
-                );
+        if let TokenType::Symbol(Symbols::LeftBracket) = self.peek(tokens)._type {
+            // '['
+            let token = self.advance(tokens, source)?;
+            consume_single_terminal_token!(
+                self,
+                token,
+                TokenType::Symbol(Symbols::LeftBracket),
+                TokenType::Symbol(Symbols::LeftBracket),
+                source
+            );
 
-                // expression
-                self.expression(tokens, source)?;
+            // expression
+            self.expression(tokens, source)?;
 
-                // ']'
-                let token = self.advance(tokens, source)?;
-                consume_single_terminal_token!(
-                    self,
-                    token,
-                    TokenType::Symbol(Symbols::RightBracket),
-                    TokenType::Symbol(Symbols::RightBracket),
-                    source
-                );
-            }
-            _ => {
-                // Skip
-            }
+            // ']'
+            let token = self.advance(tokens, source)?;
+            consume_single_terminal_token!(
+                self,
+                token,
+                TokenType::Symbol(Symbols::RightBracket),
+                TokenType::Symbol(Symbols::RightBracket),
+                source
+            );
         }
 
         // '='
@@ -626,41 +590,33 @@ impl Parser {
         );
 
         // ()?
-        let token = self.peek(tokens);
-        match token._type {
+        if let TokenType::Keyword(ReservedKeywords::Else) = self.peek(tokens)._type {
             // 'else'
-            TokenType::Keyword(ReservedKeywords::Else) => {
-                self.push_terminal(&token, source);
-                self.advance(tokens, source)?;
-            }
-            _ => {
-                // Skip since there is no else
-                return Ok(());
-            }
+            self.push_terminal(&token, source);
+            self.advance(tokens, source)?;
+
+            // '{'
+            let token = self.advance(tokens, source)?;
+            consume_single_terminal_token!(
+                self,
+                token,
+                TokenType::Symbol(Symbols::LeftBrace),
+                TokenType::Symbol(Symbols::LeftBrace),
+                source
+            );
+
+            self.statements(tokens, source)?;
+
+            // '}'
+            let token = self.advance(tokens, source)?;
+            consume_single_terminal_token!(
+                self,
+                token,
+                TokenType::Symbol(Symbols::RightBrace),
+                TokenType::Symbol(Symbols::RightBrace),
+                source
+            );
         }
-
-        // Continue to consume since we took else
-        // '{'
-        let token = self.advance(tokens, source)?;
-        consume_single_terminal_token!(
-            self,
-            token,
-            TokenType::Symbol(Symbols::LeftBrace),
-            TokenType::Symbol(Symbols::LeftBrace),
-            source
-        );
-
-        self.statements(tokens, source)?;
-
-        // '}'
-        let token = self.advance(tokens, source)?;
-        consume_single_terminal_token!(
-            self,
-            token,
-            TokenType::Symbol(Symbols::RightBrace),
-            TokenType::Symbol(Symbols::RightBrace),
-            source
-        );
 
         self.ast.push("</ifStatement>".to_string());
         Ok(())
@@ -699,22 +655,326 @@ impl Parser {
             source
         );
 
+        // '{'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::LeftBrace),
+            TokenType::Symbol(Symbols::LeftBrace),
+            source
+        );
+
+        self.statements(tokens, source)?;
+
+        // '}'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::RightBrace),
+            TokenType::Symbol(Symbols::RightBrace),
+            source
+        );
+
         self.ast.push("</whileStatement>".to_string());
         Ok(())
     }
     fn do_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.ast.push("<doStatement>".to_string());
+
+        // 'do'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Keyword(ReservedKeywords::Do),
+            TokenType::Keyword(ReservedKeywords::Do),
+            source
+        );
+
+        self.subroutine_call(tokens, source)?;
+
+        // ';'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::SemiColon),
+            TokenType::Symbol(Symbols::SemiColon),
+            source
+        );
+
         self.ast.push("</doStatement>".to_string());
         Ok(())
     }
     fn return_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.ast.push("<returnStatement>".to_string());
+
+        // 'return'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Keyword(ReservedKeywords::Return),
+            TokenType::Keyword(ReservedKeywords::Return),
+            source
+        );
+
+        // expression? ';'
+        match self.peek(tokens)._type {
+            TokenType::Symbol(Symbols::SemiColon) => {
+                // Skip expression
+            }
+            _ => {
+                // Consume expression
+                self.expression(tokens, source)?;
+            }
+        }
+
+        // ';'
+        let token = self.advance(tokens, source)?;
+        consume_single_terminal_token!(
+            self,
+            token,
+            TokenType::Symbol(Symbols::SemiColon),
+            TokenType::Symbol(Symbols::SemiColon),
+            source
+        );
+
         self.ast.push("</returnStatement>".to_string());
         Ok(())
     }
 
     // Expressions
     fn expression(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<expression>".to_string());
+        self.term(tokens, source)?;
+        // (op term)*
+        while let TokenType::Symbol(
+            Symbols::Plus
+            | Symbols::Minus
+            | Symbols::Asterisk
+            | Symbols::Slash
+            | Symbols::And
+            | Symbols::Or
+            | Symbols::GreaterThan
+            | Symbols::LessThan
+            | Symbols::Equal,
+        ) = self.peek(tokens)._type
+        {
+            let token = self.advance(tokens, source)?;
+            self.push_terminal(&token, source);
+            self.term(tokens, source)?;
+        }
+        self.ast.push("</expression>".to_string());
+        Ok(())
+    }
+    fn subroutine_call(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        // subroutineName | className | varName
+        self.identifier(tokens, source)?;
+        match self.peek(tokens)._type {
+            TokenType::Symbol(Symbols::LeftParam) => {
+                // '('
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::LeftParam),
+                    TokenType::Symbol(Symbols::LeftParam),
+                    source
+                );
+
+                self.expression_list(tokens, source)?;
+
+                // ')'
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::RightParam),
+                    TokenType::Symbol(Symbols::RightParam),
+                    source
+                );
+            }
+            TokenType::Symbol(Symbols::Dot) => {
+                // '.'
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::Dot),
+                    TokenType::Symbol(Symbols::Dot),
+                    source
+                );
+
+                // subroutineName
+                self.identifier(tokens, source)?;
+
+                // '('
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::LeftParam),
+                    TokenType::Symbol(Symbols::LeftParam),
+                    source
+                );
+
+                self.expression_list(tokens, source)?;
+
+                // ')'
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::RightParam),
+                    TokenType::Symbol(Symbols::RightParam),
+                    source
+                );
+            }
+            _ => {
+                let token = &self.peek(tokens);
+                return Err(Self::error_expected_token_type(
+                    token,
+                    &[
+                        TokenType::Symbol(Symbols::LeftParam),
+                        TokenType::Symbol(Symbols::Dot),
+                    ],
+                    source,
+                ));
+            }
+        }
+        Ok(())
+    }
+    fn term(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<term>".to_string());
+        let token = self.peek(tokens);
+        match token._type {
+            TokenType::Keyword(
+                ReservedKeywords::True
+                | ReservedKeywords::False
+                | ReservedKeywords::Null
+                | ReservedKeywords::This,
+            )
+            | TokenType::String
+            | TokenType::Integer(_) => {
+                self.push_terminal(&token, source);
+                self.advance(tokens, source)?;
+            }
+            TokenType::Identifier => {
+                // Decide between varName, varName '[' and subroutine_call
+                // LL(2)
+                match self.peek_n(1, tokens, source) {
+                    Some(next_token) => {
+                        match next_token._type {
+                            TokenType::Symbol(Symbols::LeftBracket) => {
+                                self.identifier(tokens, source)?;
+                                // '['
+                                let token = self.advance(tokens, source)?;
+                                consume_single_terminal_token!(
+                                    self,
+                                    token,
+                                    TokenType::Symbol(Symbols::LeftBracket),
+                                    TokenType::Symbol(Symbols::LeftBracket),
+                                    source
+                                );
+
+                                // expression
+                                self.expression(tokens, source)?;
+
+                                // ']'
+                                let token = self.advance(tokens, source)?;
+                                consume_single_terminal_token!(
+                                    self,
+                                    token,
+                                    TokenType::Symbol(Symbols::RightBracket),
+                                    TokenType::Symbol(Symbols::RightBracket),
+                                    source
+                                );
+                            }
+                            TokenType::Symbol(Symbols::LeftBrace | Symbols::Dot) => {
+                                self.subroutine_call(tokens, source)?;
+                            }
+                            _ => {
+                                // Just varName
+                                self.identifier(tokens, source)?;
+                            }
+                        }
+                    }
+                    None => {
+                        // Just varName
+                        self.identifier(tokens, source)?;
+                    }
+                }
+            }
+            TokenType::Symbol(Symbols::LeftParam) => {
+                // '('
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::LeftParam),
+                    TokenType::Symbol(Symbols::LeftParam),
+                    source
+                );
+
+                self.expression(tokens, source)?;
+
+                // ')'
+                let token = self.advance(tokens, source)?;
+                consume_single_terminal_token!(
+                    self,
+                    token,
+                    TokenType::Symbol(Symbols::RightParam),
+                    TokenType::Symbol(Symbols::RightParam),
+                    source
+                );
+            }
+            TokenType::Symbol(Symbols::Minus | Symbols::Tilde) => {
+                self.push_terminal(&token, source);
+                self.advance(tokens, source)?;
+                self.term(tokens, source)?;
+            }
+            _ => {
+                return Err(format!(
+                    "Expected a term, got {} on line {}",
+                    token.get_source(source),
+                    token.line
+                ));
+            }
+        }
+        self.ast.push("</term>".to_string());
+        Ok(())
+    }
+    fn expression_list(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+        self.ast.push("<expressionList>".to_string());
+        // (expression (',' expression)*)?
+        match self.peek(tokens)._type {
+            TokenType::Identifier
+            | TokenType::Integer(_)
+            | TokenType::String
+            | TokenType::Keyword(
+                ReservedKeywords::This
+                | ReservedKeywords::True
+                | ReservedKeywords::False
+                | ReservedKeywords::Null,
+            )
+            | TokenType::Symbol(Symbols::Dot | Symbols::Tilde) => {
+                self.expression(tokens, source)?;
+
+                // (',' expression)*
+                while let TokenType::Symbol(Symbols::Dot) = self.peek(tokens)._type {
+                    // ','
+                    let token = self.advance(tokens, source)?;
+                    self.push_terminal(&token, source);
+
+                    self.expression(tokens, source)?;
+                }
+            }
+            _ => {}
+        }
+        self.ast.push("</expressionList>".to_string());
         Ok(())
     }
 
@@ -773,11 +1033,14 @@ mod tests {
     use super::*;
     #[test]
     fn custom() {
-        let source = "class TEstClassName { static WowName name1, name2;\nfield NmmSw wowname1;\nfunction funnyClass wow_method(int wiw, class2 damn, nans bob) }"
+        let source = "class TEstClassName { static WowName name1, name2;\nfield NmmSw wowname1;\nfunction funnyClass wow_method(int wiw, class2 damn, nans bob){\nvar int a;let a=13;} }"
             .to_string();
         let tokens = Tokenizer::generate_tokens(&source).unwrap();
+        let source = source.chars().collect::<Vec<char>>();
         let mut parser = Parser::new();
-        parser.parse(&tokens, &source).unwrap();
+        let output = parser.parse_tokens(&tokens, &source);
+        println!("{:?}", tokens);
+        println!("{:?}", output);
         println!("{:?}", parser.ast);
         assert!(false);
     }
@@ -786,22 +1049,25 @@ mod tests {
     fn empty_class() {
         let source = "class TEstClassName {}".to_string();
         let tokens = Tokenizer::generate_tokens(&source).unwrap();
+        let source = source.chars().collect::<Vec<char>>();
         let mut parser = Parser::new();
-        let output = parser.parse(&tokens, &source);
+        let output = parser.parse_tokens(&tokens, &source);
         assert!(output.is_ok());
     }
     #[test]
     fn broken_class() {
         let source = "class TEstClassName {".to_string();
         let tokens = Tokenizer::generate_tokens(&source).unwrap();
+        let source = source.chars().collect::<Vec<char>>();
         let mut parser = Parser::new();
-        let output = parser.parse(&tokens, &source);
+        let output = parser.parse_tokens(&tokens, &source);
         assert!(output.is_err());
 
         let source = "class let {}".to_string();
         let tokens = Tokenizer::generate_tokens(&source).unwrap();
+        let source = source.chars().collect::<Vec<char>>();
         let mut parser = Parser::new();
-        let output = parser.parse(&tokens, &source);
+        let output = parser.parse_tokens(&tokens, &source);
         assert!(output.is_err());
     }
     #[test]
@@ -809,8 +1075,9 @@ mod tests {
         let source =
             "class TEstClassName { static int field1, field2;\nfield someClass name1;}".to_string();
         let tokens = Tokenizer::generate_tokens(&source).unwrap();
+        let source = source.chars().collect::<Vec<char>>();
         let mut parser = Parser::new();
-        let output = parser.parse(&tokens, &source);
+        let output = parser.parse_tokens(&tokens, &source);
         assert!(output.is_ok());
     }
     #[test]
