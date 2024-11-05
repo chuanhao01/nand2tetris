@@ -557,16 +557,6 @@ impl Parser {
             source
         );
 
-        // Consume '{'
-        let token = self.advance(tokens, source)?;
-        consume_single_terminal_token!(
-            self,
-            token,
-            TokenType::Symbol(Symbols::LeftBrace),
-            TokenType::Symbol(Symbols::LeftBrace),
-            source
-        );
-
         // '{'
         let token = self.advance(tokens, source)?;
         consume_single_terminal_token!(
@@ -592,8 +582,8 @@ impl Parser {
         // ()?
         if let TokenType::Keyword(ReservedKeywords::Else) = self.peek(tokens)._type {
             // 'else'
+            let token = self.advance(tokens, source)?;
             self.push_terminal(&token, source);
-            self.advance(tokens, source)?;
 
             // '{'
             let token = self.advance(tokens, source)?;
