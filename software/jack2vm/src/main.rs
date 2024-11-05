@@ -39,6 +39,6 @@ fn main() -> ProgResult {
         // run main prog
         compile_file(&args[1])
     } else {
-        Err(String::from("Usage: rust-hackasm2bin [path]"))
+        Err(String::from("Usage: jack2vm [path]"))
     }
 }
