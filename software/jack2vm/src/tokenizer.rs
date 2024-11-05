@@ -214,14 +214,18 @@ impl Tokenizer {
                                 self.current += 2; // Skip /*
                                 loop {
                                     while !self.is_at_end(source) && self.peek(source) != '*' {
-                                        self.advance(source);
+                                        let token = self.advance(source).unwrap();
+                                        // Skip any newlines here as well
+                                        if token == '\n' {
+                                            self.line += 1;
+                                        }
                                     }
                                     if let Some(closing_c) = self.peek_next(source) {
                                         if closing_c == '/' {
                                             self.current += 2;
                                             break;
                                         } else {
-                                            // Have not reached the end of the comment
+                                            // Have not reached the end of the comment, consume "*"
                                             self.advance(source);
                                         }
                                     } else {

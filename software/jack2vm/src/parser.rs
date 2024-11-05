@@ -956,11 +956,11 @@ impl Parser {
                 | ReservedKeywords::False
                 | ReservedKeywords::Null,
             )
-            | TokenType::Symbol(Symbols::Dot | Symbols::Tilde) => {
+            | TokenType::Symbol(Symbols::Minus | Symbols::Tilde | Symbols::LeftParam) => {
                 self.expression(tokens, source)?;
 
                 // (',' expression)*
-                while let TokenType::Symbol(Symbols::Dot) = self.peek(tokens)._type {
+                while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
                     // ','
                     let token = self.advance(tokens, source)?;
                     self.push_terminal(&token, source);

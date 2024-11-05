@@ -4,30 +4,42 @@ use jack2vm::Parser;
 
 type ProgResult = Result<(), String>;
 
-fn compile_file(file_path: &str) -> ProgResult {
-    let file_path = Path::new(file_path);
-    // For now we ignore the folder struct to the file and just check that the file extension is .asm
-    if file_path.file_name().is_none() {
-        return Err(format!("Expected a proper file path, not {:?}", file_path));
-    }
-    match file_path.extension() {
-        Some(extension) => {
+fn compile_jack_to_vm(file_path: &Path) -> ProgResult {
+    for entry in fs::read_dir(file_path).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let entry_path = entry.path();
+        if !entry_path.is_file() {
+            // Skip folders
+            continue;
+        }
+        if let Some(extension) = entry_path.extension() {
+            // Skip non .jack files
             if extension != "jack" {
-                return Err(String::from("File does not end with a .jack extension"));
+                continue;
             }
         }
-        None => {
-            return Err(format!(
-                "Expected file, {}, to have .jack extension",
-                file_path.file_name().unwrap().to_str().unwrap(),
-            ))
-        }
+        let source = fs::read_to_string(entry_path.clone()).expect("Read the file contents");
+        let ast = Parser::parse(&source).map_err(|e| {
+            format!(
+                "Compilation error for file {}\n{}",
+                entry_path.to_str().unwrap(),
+                e
+            )
+        })?;
+        let mut ast_file_path = entry_path.to_path_buf();
+        ast_file_path.set_extension("xml");
+        fs::write(ast_file_path, ast).map_err(|e| e.to_string())?;
     }
-    let source = fs::read_to_string(file_path).expect("Read the file contents");
-    let ast = Parser::parse(&source)?;
-    let mut ast_file_path = file_path.to_path_buf();
-    ast_file_path.set_extension("xml");
-    fs::write(ast_file_path, ast).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn compile_folder(file_path: &str) -> ProgResult {
+    let file_path = Path::new(file_path);
+    // Iterate through all the files in the directory
+    if !file_path.is_dir() {
+        return Err(String::from("Not a directory"));
+    }
+    compile_jack_to_vm(file_path)?;
 
     Ok(())
 }
@@ -37,7 +49,10 @@ fn main() -> ProgResult {
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {
         // run main prog
-        compile_file(&args[1])
+        if let Err(e) = compile_folder(&args[1]) {
+            println!("{}", e);
+        }
+        Ok(())
     } else {
         Err(String::from("Usage: jack2vm [path]"))
     }
