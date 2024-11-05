@@ -998,9 +998,6 @@ impl Parser {
             Some(tokens[self.current + n].clone())
         }
     }
-    fn is_at_end(&mut self, tokens: &[Token]) -> bool {
-        self.current >= tokens.len()
-    }
     fn error_unexpected_end(token: &Token, source: &[char]) -> String {
         format!(
             "Unexpected end at {}, on line {}",
