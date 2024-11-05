@@ -52,6 +52,12 @@ impl Parser {
     }
     pub fn parse(source: &str) -> Result<String, String> {
         let tokens = Tokenizer::generate_tokens(source)?;
+        // Debug show tokens
+        #[cfg(feature = "debug")]
+        {
+            println!("{:?}", tokens);
+            println!();
+        }
         let source = source.chars().collect::<Vec<char>>();
         let mut parser = Parser::new();
         parser.parse_tokens(&tokens, &source)
