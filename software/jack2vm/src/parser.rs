@@ -1,6 +1,6 @@
 use crate::{ReservedKeywords, Symbols, Token, TokenType, Tokenizer};
 
-type ParserReturn = Result<(), String>;
+pub type ParserReturn = Result<(), String>;
 
 // Forbidden arts
 // Used to help writing code that check and consumes a terminal token
@@ -45,6 +45,7 @@ macro_rules! consume_single_terminal_token {
 pub struct Parser {
     current: usize,
     ast: Vec<String>,
+    class_name: String,
 }
 impl Parser {
     pub fn new() -> Self {
@@ -90,6 +91,8 @@ impl Parser {
 
         // Consume className, ignored
         self.identifier(tokens, source)?;
+        let token = &tokens[self.current - 1];
+        self.class_name = token.get_source(source);
 
         // Consume '{'
         let token = self.advance(tokens, source)?;
@@ -1005,7 +1008,11 @@ impl Parser {
             token.line
         )
     }
-    fn error_expected_token_type(token: &Token, _types: &[TokenType], source: &[char]) -> String {
+    pub fn error_expected_token_type(
+        token: &Token,
+        _types: &[TokenType],
+        source: &[char],
+    ) -> String {
         format!(
             "Expected {}, got {} on line {}",
             _types
