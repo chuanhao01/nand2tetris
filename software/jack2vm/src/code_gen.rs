@@ -2,13 +2,15 @@ use std::collections::HashMap;
 
 use crate::{Parser, ParserReturn, ReservedKeywords, Token, TokenType};
 
-enum VariableKind {
+#[derive(Debug)]
+pub enum VariableKind {
     Field,
     Static,
     Argument,
     Local,
 }
 
+#[derive(Debug)]
 enum VariableType {
     Int,
     Char,
@@ -19,6 +21,7 @@ enum VariableType {
 // type
 // kind
 // no.
+#[derive(Debug)]
 struct VariableMetaData {
     _type: VariableType,
     kind: VariableKind,
@@ -37,11 +40,11 @@ impl CodeGen {
     fn new() -> Self {
         Self::default()
     }
-    fn insert_class_variable(
+    pub fn insert_class_variable(
         &mut self,
         name: String,
-        kind: Token,
-        _type: Token,
+        kind: &Token,
+        _type: &Token,
         source: &[char],
     ) -> ParserReturn {
         let variable_kind = match &kind._type {
@@ -102,32 +105,35 @@ impl CodeGen {
             None => Ok(()),
         }
     }
-    fn reset_subroutine_table(&mut self, class_name: String) {
-        self.subroutine_symbol_table = HashMap::default();
+    pub fn reset_subroutine_table(&mut self, class_name: String) {
+        self.subroutine_symbol_table = HashMap::new();
+        self.subroutine_symbol_table.insert(
+            String::from("this"),
+            VariableMetaData {
+                _type: VariableType::Identifier(class_name),
+                number: 0,
+                kind: VariableKind::Argument,
+            },
+        );
+        self.argument_counter = 1; // Because of thisQ
         self.local_counter = 0;
-        self.argument_counter = 0;
     }
-    fn insert_subroutine_variable(
+    pub fn insert_subroutine_variable(
         &mut self,
         name: String,
-        kind: Token,
-        _type: Token,
+        variable_kind: VariableKind,
+        _type: &Token,
         source: &[char],
     ) -> ParserReturn {
-        let variable_kind = match &kind._type {
-            TokenType::Keyword(ReservedKeywords::Static) => VariableKind::Static,
-            TokenType::Keyword(ReservedKeywords::Field) => VariableKind::Field,
+        if let Some(existing_variable_meta_data) = self.class_symbol_table.get(&name) {
+            return Err(format!("Variable with the same name declared again at line {}, was declared previously as a {:?} variable", _type.line, existing_variable_meta_data.kind));
+        }
+        match variable_kind {
+            VariableKind::Local | VariableKind::Argument => {}
             _ => {
-                return Err(Parser::error_expected_token_type(
-                    &kind,
-                    &[
-                        TokenType::Keyword(ReservedKeywords::Static),
-                        TokenType::Keyword(ReservedKeywords::Field),
-                    ],
-                    source,
-                ))
+                panic!("Wow, the person that coded this should not have done this. insert subroutine variable failed on kind")
             }
-        };
+        }
         let variable_type = match &_type._type {
             TokenType::Keyword(ReservedKeywords::Int) => VariableType::Int,
             TokenType::Keyword(ReservedKeywords::Char) => VariableType::Char,
@@ -147,13 +153,13 @@ impl CodeGen {
             }
         };
         let number = match variable_kind {
-            VariableKind::Static => {
-                self.static_counter += 1;
-                self.static_counter - 1
+            VariableKind::Argument => {
+                self.argument_counter += 1;
+                self.argument_counter - 1
             }
-            VariableKind::Field => {
-                self.field_counter += 1;
-                self.field_counter - 1
+            VariableKind::Local => {
+                self.local_counter += 1;
+                self.local_counter - 1
             }
             _ => panic!("Should not fail insert class variable"),
         };
@@ -165,9 +171,11 @@ impl CodeGen {
                 number,
             },
         ) {
+            // Discrepency with insert_class_variable since we don't pass in a kind token
+            // We use _type instead of kind.line
             Some(_) => Err(format!(
                 "Class variable {} is defined again on line {}",
-                name, kind.line
+                name, _type.line
             )),
             None => Ok(()),
         }

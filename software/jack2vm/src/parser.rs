@@ -1,4 +1,4 @@
-use crate::{ReservedKeywords, Symbols, Token, TokenType, Tokenizer};
+use crate::{CodeGen, ReservedKeywords, Symbols, Token, TokenType, Tokenizer, VariableKind};
 
 pub type ParserReturn = Result<(), String>;
 
@@ -41,11 +41,21 @@ macro_rules! consume_single_terminal_token {
 ///
 /// Example where this needs to be considered is that when peeking to check if we need to consume 0 or more tokens,
 /// we do no need to worry about not having any more tokens to consume
-#[derive(Default)]
 pub struct Parser {
     current: usize,
     ast: Vec<String>,
-    class_name: String,
+    class_name: Option<String>,
+    code_gen: CodeGen,
+}
+impl Default for Parser {
+    fn default() -> Self {
+        Self {
+            current: 0,
+            ast: Vec::default(),
+            class_name: None,
+            code_gen: CodeGen::default(),
+        }
+    }
 }
 impl Parser {
     pub fn new() -> Self {
@@ -92,7 +102,7 @@ impl Parser {
         // Consume className, ignored
         self.identifier(tokens, source)?;
         let token = &tokens[self.current - 1];
-        self.class_name = token.get_source(source);
+        self.class_name = Some(token.get_source(source));
 
         // Consume '{'
         let token = self.advance(tokens, source)?;
@@ -137,6 +147,7 @@ impl Parser {
 
         // Consume ('static' | 'field')
         let token = self.advance(tokens, source)?;
+        let variable_kind = &token;
         if !matches!(
             token._type,
             TokenType::Keyword(ReservedKeywords::Static | ReservedKeywords::Field)
@@ -154,9 +165,13 @@ impl Parser {
 
         // Pass to type
         self._type(tokens, source)?;
+        let variable_type = &tokens[self.current - 1];
 
         // Consume varName, ignored
         self.identifier(tokens, source)?;
+        let name = tokens[self.current - 1].get_source(source);
+        self.code_gen
+            .insert_class_variable(name, variable_kind, variable_type, source)?;
 
         // (',' varName)*
         while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
@@ -165,6 +180,9 @@ impl Parser {
             self.push_terminal(&token, source);
             // varName
             self.identifier(tokens, source)?;
+            let name = tokens[self.current - 1].get_source(source);
+            self.code_gen
+                .insert_class_variable(name, variable_kind, variable_type, source)?;
         }
 
         // ';'
@@ -229,6 +247,10 @@ impl Parser {
             TokenType::Symbol(Symbols::LeftParam),
             source
         );
+
+        // decalring a new subroutine
+        self.code_gen
+            .reset_subroutine_table(self.class_name.clone().unwrap());
 
         // parameterList
         self.parameter_list(tokens, source)?;
@@ -333,7 +355,15 @@ impl Parser {
         | TokenType::Identifier = self.peek(tokens)._type
         {
             self._type(tokens, source)?;
+            let variable_type = &tokens[self.current - 1];
             self.identifier(tokens, source)?;
+            let name = tokens[self.current - 1].get_source(source);
+            self.code_gen.insert_subroutine_variable(
+                name,
+                VariableKind::Argument,
+                &variable_type,
+                source,
+            )?;
 
             // (',' type varName)*
             while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
@@ -342,8 +372,16 @@ impl Parser {
                 self.push_terminal(&token, source);
                 // type
                 self._type(tokens, source)?;
+                let variable_type = &tokens[self.current - 1];
                 // varName
                 self.identifier(tokens, source)?;
+                let name = tokens[self.current - 1].get_source(source);
+                self.code_gen.insert_subroutine_variable(
+                    name,
+                    VariableKind::Argument,
+                    &variable_type,
+                    source,
+                )?;
             }
         }
 
