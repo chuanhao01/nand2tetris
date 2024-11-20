@@ -45,7 +45,7 @@ pub struct Parser {
     current: usize,
     ast: Vec<String>,
     class_name: Option<String>,
-    code_gen: CodeGen,
+    pub code_gen: CodeGen,
 }
 impl Default for Parser {
     fn default() -> Self {
@@ -71,7 +71,13 @@ impl Parser {
         }
         let source = source.chars().collect::<Vec<char>>();
         let mut parser = Parser::new();
-        parser.parse_tokens(&tokens, &source)
+        let result = parser.parse_tokens(&tokens, &source);
+        #[cfg(feature = "debug")]
+        {
+            println!("{:?}", parser.code_gen.class_symbol_table);
+            println!();
+        }
+        result
     }
     fn parse_tokens(&mut self, tokens: &[Token], source: &[char]) -> Result<String, String> {
         // Returns XML string to write to file
@@ -269,6 +275,11 @@ impl Parser {
         self.subroutine_body(tokens, source)?;
 
         self.ast.push("</subroutineDec>".to_string());
+        #[cfg(feature = "debug")]
+        {
+            println!("{:?}", self.code_gen.subroutine_symbol_table);
+            println!();
+        }
         Ok(())
     }
     fn subroutine_body(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -320,9 +331,17 @@ impl Parser {
 
         // type
         self._type(tokens, source)?;
+        let variable_type = &tokens[self.current - 1];
 
         // varName, ignored
         self.identifier(tokens, source)?;
+        let name = tokens[self.current - 1].get_source(source);
+        self.code_gen.insert_subroutine_variable(
+            name,
+            VariableKind::Local,
+            &variable_type,
+            source,
+        )?;
 
         // (',' varName)*
         while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
@@ -331,6 +350,15 @@ impl Parser {
             self.push_terminal(&token, source);
             // varName
             self.identifier(tokens, source)?;
+
+            // variables declared on the same line have the same type
+            let name = tokens[self.current - 1].get_source(source);
+            self.code_gen.insert_subroutine_variable(
+                name,
+                VariableKind::Local,
+                &variable_type,
+                source,
+            )?;
         }
 
         // ';'

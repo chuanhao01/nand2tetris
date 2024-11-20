@@ -11,7 +11,7 @@ pub enum VariableKind {
 }
 
 #[derive(Debug)]
-enum VariableType {
+pub enum VariableType {
     Int,
     Char,
     Boolean,
@@ -22,15 +22,15 @@ enum VariableType {
 // kind
 // no.
 #[derive(Debug)]
-struct VariableMetaData {
+pub struct VariableMetaData {
     _type: VariableType,
     kind: VariableKind,
     number: usize,
 }
 
 pub struct CodeGen {
-    class_symbol_table: HashMap<String, VariableMetaData>,
-    subroutine_symbol_table: HashMap<String, VariableMetaData>,
+    pub class_symbol_table: HashMap<String, VariableMetaData>,
+    pub subroutine_symbol_table: HashMap<String, VariableMetaData>,
     field_counter: usize,
     static_counter: usize,
     argument_counter: usize,
@@ -163,7 +163,7 @@ impl CodeGen {
             }
             _ => panic!("Should not fail insert class variable"),
         };
-        match self.class_symbol_table.insert(
+        match self.subroutine_symbol_table.insert(
             name.clone(),
             VariableMetaData {
                 _type: variable_type,

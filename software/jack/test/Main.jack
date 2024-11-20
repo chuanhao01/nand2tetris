@@ -1,0 +1,11 @@
+class Main{
+    static int a;
+    static anotherClass aa;
+    field int b;
+    field wowClass bb;
+
+    function int wow_routine(int c, wowClass d){
+        var int e, ee, efg;
+        var fclass f, ff, fgh;
+    }
+}
