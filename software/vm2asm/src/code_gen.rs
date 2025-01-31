@@ -121,8 +121,8 @@ impl CodeGen {
     pub fn bin_comp(&mut self, file_name: &String, comp: &str) -> Vec<String> {
         let asm_jump_comp = match comp {
             "eq" => "JEQ",
-            "gt" => "JGT",
-            "lt" => "JLT",
+            "gt" => "JGT", // x > y
+            "lt" => "JLT", // x < y
             _ => panic!("Unexpected comp, {}", comp),
         };
         self.binary_counter += 1;

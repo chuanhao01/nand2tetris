@@ -1,4 +1,5 @@
 # Note
+The VM represents true and false as 1 (minus one, 0xFFFF ) and 0 (zero, 0x0000), respectively.
 
 Treat every other value that is not -1 or 0 as true
 Because thats the behaviour for `if-goto label` WHY?
