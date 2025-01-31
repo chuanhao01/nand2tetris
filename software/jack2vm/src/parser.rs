@@ -44,9 +44,10 @@ macro_rules! consume_single_terminal_token {
 pub struct Parser {
     current: usize,
     ast: Vec<String>,
-    class_name: Option<String>,
+    class_name: Option<String>, // This is set when we look at the class dec
     pub code_gen: CodeGen,
 }
+#[allow(clippy::derivable_impls)]
 impl Default for Parser {
     fn default() -> Self {
         Self {
@@ -74,6 +75,7 @@ impl Parser {
         let result = parser.parse_tokens(&tokens, &source);
         #[cfg(feature = "debug")]
         {
+            println!("{} class symbol ", parser.class_name.unwrap());
             println!("{:?}", parser.code_gen.class_symbol_table);
             println!();
         }
@@ -243,6 +245,8 @@ impl Parser {
 
         // subroutineName, identifier, ignored
         self.identifier(tokens, source)?;
+        let token = &tokens[self.current - 1];
+        let subroutine_name = token.get_source(source);
 
         // '('
         let token = self.advance(tokens, source)?;
@@ -277,6 +281,11 @@ impl Parser {
         self.ast.push("</subroutineDec>".to_string());
         #[cfg(feature = "debug")]
         {
+            println!(
+                "{}.{} symbol table",
+                self.class_name.clone().unwrap(),
+                subroutine_name
+            );
             println!("{:?}", self.code_gen.subroutine_symbol_table);
             println!();
         }

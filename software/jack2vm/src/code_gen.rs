@@ -28,6 +28,8 @@ pub struct VariableMetaData {
     number: usize,
 }
 
+/// Used by the Parser
+/// subroutine symbol table is reset by the subroutine dec before used
 pub struct CodeGen {
     pub class_symbol_table: HashMap<String, VariableMetaData>,
     pub subroutine_symbol_table: HashMap<String, VariableMetaData>,
@@ -47,12 +49,12 @@ impl CodeGen {
         _type: &Token,
         source: &[char],
     ) -> ParserReturn {
-        let variable_kind = match &kind._type {
+        let variable_kind = match kind._type {
             TokenType::Keyword(ReservedKeywords::Static) => VariableKind::Static,
             TokenType::Keyword(ReservedKeywords::Field) => VariableKind::Field,
             _ => {
                 return Err(Parser::error_expected_token_type(
-                    &kind,
+                    kind,
                     &[
                         TokenType::Keyword(ReservedKeywords::Static),
                         TokenType::Keyword(ReservedKeywords::Field),
@@ -68,7 +70,7 @@ impl CodeGen {
             TokenType::Identifier => VariableType::Identifier(_type.get_source(source)),
             _ => {
                 return Err(Parser::error_expected_token_type(
-                    &_type,
+                    _type,
                     &[
                         TokenType::Keyword(ReservedKeywords::Int),
                         TokenType::Keyword(ReservedKeywords::Char),
@@ -115,7 +117,7 @@ impl CodeGen {
                 kind: VariableKind::Argument,
             },
         );
-        self.argument_counter = 1; // Because of thisQ
+        self.argument_counter = 1; // Because of this
         self.local_counter = 0;
     }
     pub fn insert_subroutine_variable(
@@ -134,14 +136,14 @@ impl CodeGen {
                 panic!("Wow, the person that coded this should not have done this. insert subroutine variable failed on kind")
             }
         }
-        let variable_type = match &_type._type {
+        let variable_type = match _type._type {
             TokenType::Keyword(ReservedKeywords::Int) => VariableType::Int,
             TokenType::Keyword(ReservedKeywords::Char) => VariableType::Char,
             TokenType::Keyword(ReservedKeywords::Boolean) => VariableType::Boolean,
             TokenType::Identifier => VariableType::Identifier(_type.get_source(source)),
             _ => {
                 return Err(Parser::error_expected_token_type(
-                    &_type,
+                    _type,
                     &[
                         TokenType::Keyword(ReservedKeywords::Int),
                         TokenType::Keyword(ReservedKeywords::Char),
@@ -181,6 +183,7 @@ impl CodeGen {
         }
     }
 }
+#[allow(clippy::derivable_impls)]
 impl Default for CodeGen {
     fn default() -> Self {
         Self {
