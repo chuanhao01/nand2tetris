@@ -10,6 +10,7 @@
   // "rust-analyzer.linkedProjects": [
   //   "./Cargo.toml"
   // ],
+  "rust-analyzer.cargo.features": ["debug"],
   "markdownlint.config": {
     "MD007": { "indent": 2 },
     "MD024": false,
