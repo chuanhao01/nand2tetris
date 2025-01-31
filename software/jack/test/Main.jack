@@ -7,5 +7,6 @@ class Main{
     function int wow_routine(int c, wowClass d){
         var int e, ee, efg;
         var fclass f, ff, fgh;
+        let e = ee + efg = efg;
     }
 }
