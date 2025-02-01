@@ -43,6 +43,9 @@ impl CodeGen {
     fn new() -> Self {
         Self::default()
     }
+    pub fn gen_vm_code(&self) -> String {
+        self.vm_code.join("\n")
+    }
     pub fn insert_class_variable(
         &mut self,
         name: String,

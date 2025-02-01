@@ -32,6 +32,9 @@ fn compile_jack_to_vm(file_path: &Path) -> ProgResult {
             ast_file_path.set_extension("xml");
             fs::write(ast_file_path, parser_code_output).map_err(|e| e.to_string())?;
         }
+        let mut vm_file_path = entry_path.to_path_buf();
+        vm_file_path.set_extension("vm");
+        fs::write(vm_file_path, parser_code_output.vm).map_err(|e| e.to_string())?;
     }
     Ok(())
 }

@@ -105,7 +105,7 @@ impl Parser {
         }
         Ok(ParserCodeOutput {
             xml: self.xml_ast.join("\n"),
-            vm: String::new(),
+            vm: self.code_gen.gen_vm_code(),
         })
     }
     fn class(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -362,7 +362,7 @@ impl Parser {
         self.code_gen.insert_subroutine_variable(
             name,
             VariableKind::Local,
-            &variable_type,
+            variable_type,
             source,
         )?;
 
@@ -379,7 +379,7 @@ impl Parser {
             self.code_gen.insert_subroutine_variable(
                 name,
                 VariableKind::Local,
-                &variable_type,
+                variable_type,
                 source,
             )?;
         }
@@ -851,9 +851,37 @@ impl Parser {
             | Symbols::Equal,
         ) = self.peek(tokens)._type
         {
-            let token = self.advance(tokens, source)?;
-            self.push_terminal(&token, source);
+            let op_token = self.advance(tokens, source)?;
+            self.push_terminal(&op_token, source);
             self.term(tokens, source)?;
+            // push the op after the term
+            match op_token._type {
+                TokenType::Symbol(Symbols::Plus) => {
+                    self.code_gen.push_op(VM_OPS::ADD);
+                }
+                TokenType::Symbol(Symbols::Minus) => {
+                    self.code_gen.push_op(VM_OPS::SUB);
+                }
+                TokenType::Symbol(Symbols::And) => {
+                    self.code_gen.push_op(VM_OPS::AND);
+                }
+                TokenType::Symbol(Symbols::Or) => {
+                    self.code_gen.push_op(VM_OPS::OR);
+                }
+                TokenType::Symbol(Symbols::GreaterThan) => {
+                    self.code_gen.push_op(VM_OPS::GT);
+                }
+                TokenType::Symbol(Symbols::LessThan) => {
+                    self.code_gen.push_op(VM_OPS::LT);
+                }
+                TokenType::Symbol(Symbols::Equal) => {
+                    self.code_gen.push_op(VM_OPS::EQ);
+                }
+                // TODO: OS method calls
+                TokenType::Symbol(Symbols::Asterisk) => {}
+                TokenType::Symbol(Symbols::Slash) => {}
+                _ => return Err(String::from("expression codegen, not")),
+            }
         }
         self.xml_ast.push("</expression>".to_string());
         Ok(())
@@ -975,6 +1003,7 @@ impl Parser {
                 match self.peek_n(1, tokens, source) {
                     Some(next_token) => {
                         match next_token._type {
+                            // index on variable
                             TokenType::Symbol(Symbols::LeftBracket) => {
                                 self.identifier(tokens, source)?;
                                 // '['

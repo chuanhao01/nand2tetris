@@ -13,14 +13,14 @@ impl VM_OPS {
     pub fn to_vm_string(&self) -> String {
         let s = match self {
             Self::ADD => "add",
-            Self::SUB => "SUB",
-            Self::NEG => "NEG",
-            Self::EQ => "EQ",
-            Self::GT => "GT",
-            Self::LT => "LT",
-            Self::AND => "AND",
-            Self::OR => "OR",
-            Self::NOT => "NOT",
+            Self::SUB => "sub",
+            Self::NEG => "neg",
+            Self::EQ => "eq",
+            Self::GT => "gt",
+            Self::LT => "lt",
+            Self::AND => "and",
+            Self::OR => "or",
+            Self::NOT => "not",
         };
         s.to_string()
     }

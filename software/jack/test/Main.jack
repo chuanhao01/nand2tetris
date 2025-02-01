@@ -8,5 +8,6 @@ class Main{
         var int e, ee, efg;
         var fclass f, ff, fgh;
         let e = ee + efg = efg;
+        let ee = ff.what_the();
     }
 }

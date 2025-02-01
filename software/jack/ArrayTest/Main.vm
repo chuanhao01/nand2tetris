@@ -1,0 +1,10 @@
+push constant 0
+lt
+push constant 1
+add
+push constant 0
+push constant 0
+lt
+add
+push constant 1
+add
