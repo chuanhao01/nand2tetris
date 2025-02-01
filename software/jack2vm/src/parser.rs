@@ -1,4 +1,6 @@
-use crate::{CodeGen, ReservedKeywords, Symbols, Token, TokenType, Tokenizer, VariableKind};
+use crate::{
+    CodeGen, ReservedKeywords, Symbols, Token, TokenType, Tokenizer, VariableKind, VM_OPS,
+};
 
 pub type ParserReturn = Result<(), String>;
 
@@ -43,7 +45,7 @@ macro_rules! consume_single_terminal_token {
 /// we do no need to worry about not having any more tokens to consume
 pub struct Parser {
     current: usize,
-    ast: Vec<String>,
+    xml_ast: Vec<String>,
     class_name: Option<String>, // This is set when we look at the class dec
     pub code_gen: CodeGen,
 }
@@ -52,17 +54,22 @@ impl Default for Parser {
     fn default() -> Self {
         Self {
             current: 0,
-            ast: Vec::default(),
+            xml_ast: Vec::default(),
             class_name: None,
             code_gen: CodeGen::default(),
         }
     }
 }
+#[derive(Debug)]
+pub struct ParserCodeOutput {
+    pub xml: String,
+    pub vm: String,
+}
 impl Parser {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn parse(source: &str) -> Result<String, String> {
+    pub fn parse(source: &str) -> Result<ParserCodeOutput, String> {
         let tokens = Tokenizer::generate_tokens(source)?;
         // Debug show tokens
         #[cfg(feature = "debug")]
@@ -81,7 +88,11 @@ impl Parser {
         }
         result
     }
-    fn parse_tokens(&mut self, tokens: &[Token], source: &[char]) -> Result<String, String> {
+    fn parse_tokens(
+        &mut self,
+        tokens: &[Token],
+        source: &[char],
+    ) -> Result<ParserCodeOutput, String> {
         // Returns XML string to write to file
         let token = &tokens[self.current];
         if let TokenType::Keyword(ReservedKeywords::Class) = token._type {
@@ -92,10 +103,13 @@ impl Parser {
                 token.get_source(source)
             ));
         }
-        Ok(self.ast.join("\n"))
+        Ok(ParserCodeOutput {
+            xml: self.xml_ast.join("\n"),
+            vm: String::new(),
+        })
     }
     fn class(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<class>".to_string());
+        self.xml_ast.push("<class>".to_string());
 
         // Consume class
         let token = self.advance(tokens, source)?;
@@ -147,11 +161,11 @@ impl Parser {
             source
         );
 
-        self.ast.push("</class>".to_string());
+        self.xml_ast.push("</class>".to_string());
         Ok(())
     }
     fn class_var_dec(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<classVarDec>".to_string());
+        self.xml_ast.push("<classVarDec>".to_string());
 
         // Consume ('static' | 'field')
         let token = self.advance(tokens, source)?;
@@ -203,11 +217,11 @@ impl Parser {
             source
         );
 
-        self.ast.push("</classVarDec>".to_string());
+        self.xml_ast.push("</classVarDec>".to_string());
         Ok(())
     }
     fn subroutine_dec(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<subroutineDec>".to_string());
+        self.xml_ast.push("<subroutineDec>".to_string());
 
         // Consume ('constructor' | 'function' | 'method')
         let token = self.advance(tokens, source)?;
@@ -278,7 +292,7 @@ impl Parser {
         // subroutineBody
         self.subroutine_body(tokens, source)?;
 
-        self.ast.push("</subroutineDec>".to_string());
+        self.xml_ast.push("</subroutineDec>".to_string());
         #[cfg(feature = "debug")]
         {
             println!(
@@ -292,7 +306,7 @@ impl Parser {
         Ok(())
     }
     fn subroutine_body(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<subroutineBody>".to_string());
+        self.xml_ast.push("<subroutineBody>".to_string());
 
         // '{'
         let token = self.advance(tokens, source)?;
@@ -322,11 +336,11 @@ impl Parser {
             source
         );
 
-        self.ast.push("</subroutineBody>".to_string());
+        self.xml_ast.push("</subroutineBody>".to_string());
         Ok(())
     }
     fn var_dec(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<varDec>".to_string());
+        self.xml_ast.push("<varDec>".to_string());
 
         // 'var'
         let token = self.advance(tokens, source)?;
@@ -380,11 +394,11 @@ impl Parser {
             source
         );
 
-        self.ast.push("</varDec>".to_string());
+        self.xml_ast.push("</varDec>".to_string());
         Ok(())
     }
     fn parameter_list(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<parameterList>".to_string());
+        self.xml_ast.push("<parameterList>".to_string());
         // ()?
         if let TokenType::Keyword(
             ReservedKeywords::Int | ReservedKeywords::Char | ReservedKeywords::Boolean,
@@ -422,7 +436,7 @@ impl Parser {
             }
         }
 
-        self.ast.push("</parameterList>".to_string());
+        self.xml_ast.push("</parameterList>".to_string());
         Ok(())
     }
     fn _type(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -475,9 +489,9 @@ impl Parser {
             TokenType::Symbol(_) => "symbol",
             TokenType::EOF => panic!("Should not be pushing EOF terminal"),
         };
-        self.ast.push(format!("<{}>", _type));
-        self.ast.push(token.get_source(source));
-        self.ast.push(format!("</{}>", _type));
+        self.xml_ast.push(format!("<{}>", _type));
+        self.xml_ast.push(token.get_source(source));
+        self.xml_ast.push(format!("</{}>", _type));
     }
 
     // Statements
@@ -485,7 +499,7 @@ impl Parser {
     // Could combine with self.statement
     // Match on every type, then call it
     fn statements(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<statements>".to_string());
+        self.xml_ast.push("<statements>".to_string());
         loop {
             let token = self.peek(tokens);
             match token._type {
@@ -502,7 +516,7 @@ impl Parser {
             }
         }
 
-        self.ast.push("</statements>".to_string());
+        self.xml_ast.push("</statements>".to_string());
         Ok(())
     }
     fn statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -540,7 +554,7 @@ impl Parser {
         Ok(())
     }
     fn let_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<letStatement>".to_string());
+        self.xml_ast.push("<letStatement>".to_string());
 
         // 'let'
         let token = self.advance(tokens, source)?;
@@ -603,11 +617,11 @@ impl Parser {
             source
         );
 
-        self.ast.push("</letStatement>".to_string());
+        self.xml_ast.push("</letStatement>".to_string());
         Ok(())
     }
     fn if_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<ifStatement>".to_string());
+        self.xml_ast.push("<ifStatement>".to_string());
 
         // 'if'
         let token = self.advance(tokens, source)?;
@@ -692,11 +706,11 @@ impl Parser {
             );
         }
 
-        self.ast.push("</ifStatement>".to_string());
+        self.xml_ast.push("</ifStatement>".to_string());
         Ok(())
     }
     fn while_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<whileStatement>".to_string());
+        self.xml_ast.push("<whileStatement>".to_string());
         // 'while'
         let token = self.advance(tokens, source)?;
         consume_single_terminal_token!(
@@ -751,11 +765,11 @@ impl Parser {
             source
         );
 
-        self.ast.push("</whileStatement>".to_string());
+        self.xml_ast.push("</whileStatement>".to_string());
         Ok(())
     }
     fn do_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<doStatement>".to_string());
+        self.xml_ast.push("<doStatement>".to_string());
 
         // 'do'
         let token = self.advance(tokens, source)?;
@@ -779,11 +793,11 @@ impl Parser {
             source
         );
 
-        self.ast.push("</doStatement>".to_string());
+        self.xml_ast.push("</doStatement>".to_string());
         Ok(())
     }
     fn return_statement(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<returnStatement>".to_string());
+        self.xml_ast.push("<returnStatement>".to_string());
 
         // 'return'
         let token = self.advance(tokens, source)?;
@@ -816,13 +830,13 @@ impl Parser {
             source
         );
 
-        self.ast.push("</returnStatement>".to_string());
+        self.xml_ast.push("</returnStatement>".to_string());
         Ok(())
     }
 
     // Expressions
     fn expression(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<expression>".to_string());
+        self.xml_ast.push("<expression>".to_string());
         self.term(tokens, source)?;
         // (op term)*
         while let TokenType::Symbol(
@@ -841,7 +855,7 @@ impl Parser {
             self.push_terminal(&token, source);
             self.term(tokens, source)?;
         }
-        self.ast.push("</expression>".to_string());
+        self.xml_ast.push("</expression>".to_string());
         Ok(())
     }
     fn subroutine_call(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -922,7 +936,9 @@ impl Parser {
         Ok(())
     }
     fn term(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<term>".to_string());
+        let vm_codegen_err = Err(String::from("Should not, from term codegen path"));
+
+        self.xml_ast.push("<term>".to_string());
         let token = self.peek(tokens);
         match token._type {
             TokenType::Keyword(
@@ -933,8 +949,25 @@ impl Parser {
             )
             | TokenType::String
             | TokenType::Integer(_) => {
+                // For xml_ast
                 self.push_terminal(&token, source);
                 self.advance(tokens, source)?;
+                // For vm codegen
+                match token._type {
+                    TokenType::Keyword(
+                        ReservedKeywords::True
+                        | ReservedKeywords::False
+                        | ReservedKeywords::Null
+                        | ReservedKeywords::This,
+                    )
+                    | TokenType::String => {}
+                    TokenType::Integer(x) => {
+                        self.code_gen.push_integer_constant(x as i16);
+                    }
+                    _ => {
+                        return vm_codegen_err;
+                    }
+                }
             }
             TokenType::Identifier => {
                 // Decide between varName, varName '[' and subroutine_call
@@ -1008,6 +1041,14 @@ impl Parser {
             TokenType::Symbol(Symbols::Minus | Symbols::Tilde) => {
                 self.push_terminal(&token, source);
                 self.advance(tokens, source)?;
+
+                let op = match token._type {
+                    TokenType::Symbol(Symbols::Minus) => VM_OPS::NEG,
+                    TokenType::Symbol(Symbols::Tilde) => VM_OPS::NOT,
+                    _ => return vm_codegen_err,
+                };
+                self.code_gen.push_op(op);
+
                 self.term(tokens, source)?;
             }
             _ => {
@@ -1018,11 +1059,11 @@ impl Parser {
                 ));
             }
         }
-        self.ast.push("</term>".to_string());
+        self.xml_ast.push("</term>".to_string());
         Ok(())
     }
     fn expression_list(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
-        self.ast.push("<expressionList>".to_string());
+        self.xml_ast.push("<expressionList>".to_string());
         // (expression (',' expression)*)?
         match self.peek(tokens)._type {
             TokenType::Identifier
@@ -1048,7 +1089,7 @@ impl Parser {
             }
             _ => {}
         }
-        self.ast.push("</expressionList>".to_string());
+        self.xml_ast.push("</expressionList>".to_string());
         Ok(())
     }
 
@@ -1116,7 +1157,7 @@ mod tests {
         let output = parser.parse_tokens(&tokens, &source);
         println!("{:?}", tokens);
         println!("{:?}", output);
-        println!("{:?}", parser.ast);
+        println!("{:?}", parser.xml_ast);
         assert!(false);
     }
 
@@ -1204,10 +1245,10 @@ mod tests {
         };
         let mut parser = Parser::new();
         parser.push_terminal(&token, &source);
-        assert_eq!(parser.ast.len(), 3);
-        assert_eq!(parser.ast[0], "<keyword>");
-        assert_eq!(parser.ast[1], "let");
-        assert_eq!(parser.ast[2], "</keyword>");
+        assert_eq!(parser.xml_ast.len(), 3);
+        assert_eq!(parser.xml_ast[0], "<keyword>");
+        assert_eq!(parser.xml_ast[1], "let");
+        assert_eq!(parser.xml_ast[2], "</keyword>");
 
         let source = "\"funny string\"".chars().collect::<Vec<char>>();
         let token = Token {
@@ -1218,9 +1259,9 @@ mod tests {
         };
         let mut parser = Parser::new();
         parser.push_terminal(&token, &source);
-        assert_eq!(parser.ast.len(), 3);
-        assert_eq!(parser.ast[0], "<stringConstant>");
-        assert_eq!(parser.ast[1], "funny string");
-        assert_eq!(parser.ast[2], "</stringConstant>");
+        assert_eq!(parser.xml_ast.len(), 3);
+        assert_eq!(parser.xml_ast[0], "<stringConstant>");
+        assert_eq!(parser.xml_ast[1], "funny string");
+        assert_eq!(parser.xml_ast[2], "</stringConstant>");
     }
 }

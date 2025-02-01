@@ -19,16 +19,19 @@ fn compile_jack_to_vm(file_path: &Path) -> ProgResult {
             }
         }
         let source = fs::read_to_string(entry_path.clone()).expect("Read the file contents");
-        let ast = Parser::parse(&source).map_err(|e| {
+        let parser_code_output = Parser::parse(&source).map_err(|e| {
             format!(
                 "Compilation error for file {}\n{}",
                 entry_path.to_str().unwrap(),
                 e
             )
         })?;
-        let mut ast_file_path = entry_path.to_path_buf();
-        ast_file_path.set_extension("xml");
-        fs::write(ast_file_path, ast).map_err(|e| e.to_string())?;
+        #[cfg(feature = "xml")]
+        {
+            let mut ast_file_path = entry_path.to_path_buf();
+            ast_file_path.set_extension("xml");
+            fs::write(ast_file_path, parser_code_output).map_err(|e| e.to_string())?;
+        }
     }
     Ok(())
 }

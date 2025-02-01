@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Parser, ParserReturn, ReservedKeywords, Token, TokenType};
+use crate::{Parser, ParserReturn, ReservedKeywords, Token, TokenType, VM_OPS};
 
 #[derive(Debug)]
 pub enum VariableKind {
@@ -33,6 +33,7 @@ pub struct VariableMetaData {
 pub struct CodeGen {
     pub class_symbol_table: HashMap<String, VariableMetaData>,
     pub subroutine_symbol_table: HashMap<String, VariableMetaData>,
+    vm_code: Vec<String>,
     field_counter: usize,
     static_counter: usize,
     argument_counter: usize,
@@ -182,6 +183,13 @@ impl CodeGen {
             None => Ok(()),
         }
     }
+    // handling expressions
+    pub fn push_integer_constant(&mut self, x: i16) {
+        self.vm_code.push(format!("push constant {}", x));
+    }
+    pub fn push_op(&mut self, op: VM_OPS) {
+        self.vm_code.push(op.to_vm_string());
+    }
 }
 #[allow(clippy::derivable_impls)]
 impl Default for CodeGen {
@@ -189,6 +197,7 @@ impl Default for CodeGen {
         Self {
             class_symbol_table: HashMap::default(),
             subroutine_symbol_table: HashMap::default(),
+            vm_code: Vec::default(),
             field_counter: 0,
             static_counter: 0,
             argument_counter: 0,
