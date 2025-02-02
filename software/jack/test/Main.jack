@@ -9,5 +9,11 @@ class Main{
         var fclass f, ff, fgh;
         let e = ee + efg = efg;
         let ee = ff.what_the();
+        if (33 = 2){
+            let e = 3;
+            let e = e + 3;
+        } else {
+            let e = 3 + 2;
+        }
     }
 }

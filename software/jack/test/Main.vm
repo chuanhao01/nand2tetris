@@ -1,2 +1,16 @@
 add
 eq
+push constant 33
+push constant 2
+eq
+not
+if-goto Main.flow.0
+push constant 3
+push constant 3
+add
+goto Main.flow.1
+label Main.flow.0
+push constant 3
+push constant 2
+add
+label Main.flow.1

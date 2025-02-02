@@ -38,6 +38,7 @@ pub struct CodeGen {
     static_counter: usize,
     argument_counter: usize,
     local_counter: usize,
+    flow_counter: usize,
 }
 impl CodeGen {
     fn new() -> Self {
@@ -193,6 +194,20 @@ impl CodeGen {
     pub fn push_op(&mut self, op: VM_OPS) {
         self.vm_code.push(op.to_vm_string());
     }
+    // Handling if-goto, goto and labels
+    pub fn get_flow_counter(&mut self) -> usize {
+        self.flow_counter += 1;
+        self.flow_counter - 1
+    }
+    pub fn push_if_goto(&mut self, label: String) {
+        self.vm_code.push(format!("if-goto {}", label));
+    }
+    pub fn push_goto(&mut self, label: String) {
+        self.vm_code.push(format!("goto {}", label));
+    }
+    pub fn push_label(&mut self, label: String) {
+        self.vm_code.push(format!("label {}", label));
+    }
 }
 #[allow(clippy::derivable_impls)]
 impl Default for CodeGen {
@@ -205,6 +220,7 @@ impl Default for CodeGen {
             static_counter: 0,
             argument_counter: 0,
             local_counter: 0,
+            flow_counter: 0,
         }
     }
 }
