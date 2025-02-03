@@ -631,6 +631,8 @@ impl Parser {
 
         // 'if'
         let token = self.advance(tokens, source)?;
+        self.code_gen
+            .push_comment(format!("start if, {}", token.line));
         consume_single_terminal_token!(
             self,
             token,
@@ -653,11 +655,13 @@ impl Parser {
         self.expression(tokens, source)?;
         // vmcode
         self.code_gen.push_op(VM_OPS::NOT);
-        let l1 = self.code_gen.get_flow_counter();
-        let l1 = format!("{}.flow.{}", self.class_name.clone().unwrap(), l1.clone());
-        let l2 = self.code_gen.get_flow_counter();
-        let l2 = format!("{}.flow.{}", self.class_name.clone().unwrap(), l2.clone());
-        self.code_gen.push_if_goto(l1.clone());
+        let l1 = self
+            .code_gen
+            .get_flow_counter(&self.class_name.clone().unwrap());
+        let l2 = self
+            .code_gen
+            .get_flow_counter(&self.class_name.clone().unwrap());
+        self.code_gen.push_if_goto(&l1);
 
         // ')'
         let token = self.advance(tokens, source)?;
@@ -681,8 +685,8 @@ impl Parser {
 
         self.statements(tokens, source)?;
         // vmcode
-        self.code_gen.push_goto(l2.clone());
-        self.code_gen.push_label(l1.clone());
+        self.code_gen.push_goto(&l2);
+        self.code_gen.push_label(&l1);
 
         // '}'
         let token = self.advance(tokens, source)?;
@@ -723,7 +727,9 @@ impl Parser {
             );
         }
         // vmcode
-        self.code_gen.push_label(l2.clone());
+        self.code_gen.push_label(&l2);
+        self.code_gen
+            .push_comment(format!("end if, {}", tokens[self.current - 1].line));
 
         self.xml_ast.push("</ifStatement>".to_string());
         Ok(())
@@ -732,6 +738,16 @@ impl Parser {
         self.xml_ast.push("<whileStatement>".to_string());
         // 'while'
         let token = self.advance(tokens, source)?;
+        self.code_gen
+            .push_comment(format!("start while, {}", token.line));
+        let l1 = self
+            .code_gen
+            .get_flow_counter(&self.class_name.clone().unwrap());
+        let l2 = self
+            .code_gen
+            .get_flow_counter(&self.class_name.clone().unwrap());
+        self.code_gen.push_label(&l1);
+
         consume_single_terminal_token!(
             self,
             token,
@@ -751,6 +767,8 @@ impl Parser {
         );
 
         self.expression(tokens, source)?;
+        self.code_gen.push_op(VM_OPS::NOT);
+        self.code_gen.push_if_goto(&l2);
 
         // ')'
         let token = self.advance(tokens, source)?;
@@ -773,6 +791,8 @@ impl Parser {
         );
 
         self.statements(tokens, source)?;
+        self.code_gen.push_goto(&l1);
+        self.code_gen.push_label(&l2);
 
         // '}'
         let token = self.advance(tokens, source)?;
@@ -783,6 +803,8 @@ impl Parser {
             TokenType::Symbol(Symbols::RightBrace),
             source
         );
+        self.code_gen
+            .push_comment(format!("end while, {}", tokens[self.current - 1].line));
 
         self.xml_ast.push("</whileStatement>".to_string());
         Ok(())

@@ -4,6 +4,7 @@ add
 pop local 0
 push static 0
 pop local 0
+// start if, 13
 push constant 33
 push constant 2
 eq
@@ -22,3 +23,32 @@ push constant 2
 add
 pop local 0
 label Main.flow.1
+// end if, 18
+push constant 1
+pop local 0
+// start while, 20
+label Main.flow.2
+push local 0
+push constant 3
+lt
+not
+if-goto Main.flow.3
+// start if, 21
+push local 0
+push constant 2
+eq
+not
+if-goto Main.flow.4
+push constant 20
+pop local 1
+goto Main.flow.5
+label Main.flow.4
+label Main.flow.5
+// end if, 23
+push local 0
+push constant 1
+add
+pop local 0
+goto Main.flow.2
+label Main.flow.3
+// end while, 25

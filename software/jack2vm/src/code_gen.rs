@@ -237,18 +237,24 @@ impl CodeGen {
         Ok(())
     }
     // Handling if-goto, goto and labels
-    pub fn get_flow_counter(&mut self) -> usize {
+    pub fn get_flow_counter(&mut self, class_name: &str) -> String {
         self.flow_counter += 1;
-        self.flow_counter - 1
+        format!("{}.flow.{}", class_name, self.flow_counter - 1)
     }
-    pub fn push_if_goto(&mut self, label: String) {
+    pub fn push_if_goto(&mut self, label: &str) {
         self.vm_code.push(format!("if-goto {}", label));
     }
-    pub fn push_goto(&mut self, label: String) {
+    pub fn push_goto(&mut self, label: &str) {
         self.vm_code.push(format!("goto {}", label));
     }
-    pub fn push_label(&mut self, label: String) {
+    pub fn push_label(&mut self, label: &str) {
         self.vm_code.push(format!("label {}", label));
+    }
+    pub fn push_comment(&mut self, comment: String) {
+        #[cfg(feature = "debug")]
+        {
+            self.vm_code.push(format!("// {}", comment))
+        }
     }
 }
 #[allow(clippy::derivable_impls)]

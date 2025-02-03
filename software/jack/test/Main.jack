@@ -16,5 +16,12 @@ class Main{
         } else {
             let e = 3 + 2;
         }
+        let e = 1;
+        while(e < 3){
+            if (e = 2){
+                let ee = 20;
+            }
+            let e = e + 1;
+        }
     }
 }
