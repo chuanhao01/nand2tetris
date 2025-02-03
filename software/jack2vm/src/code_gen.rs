@@ -13,7 +13,7 @@ impl VariableKind {
     pub fn to_vm_segment(&self) -> String {
         let segment = match self {
             // TODO
-            Self::Field => panic!("Not implemented yet"),
+            Self::Field => "this",
             Self::Static => "static",
             Self::Argument => "argument",
             Self::Local => "local",
@@ -205,6 +205,12 @@ impl CodeGen {
     pub fn push_integer_constant(&mut self, x: i16) {
         self.vm_code.push(format!("push constant {}", x));
     }
+    pub fn push_pointer(&mut self, no: i16) {
+        self.vm_code.push(format!("push pointer {}", no))
+    }
+    pub fn pop_pointer(&mut self, no: i16) {
+        self.vm_code.push(format!("pop pointer {}", no))
+    }
     pub fn push_op(&mut self, op: VM_OPS) {
         self.vm_code.push(op.to_vm_string());
     }
@@ -249,6 +255,35 @@ impl CodeGen {
     }
     pub fn push_label(&mut self, label: &str) {
         self.vm_code.push(format!("label {}", label));
+    }
+    // functions
+    pub fn push_function(&mut self, class_name: &str, function_name: &str) {
+        let n_locals = self
+            .subroutine_symbol_table
+            .iter()
+            .filter(|(_, v)| matches!(v.kind, VariableKind::Local))
+            .count();
+        self.vm_code.push(format!(
+            "function {}.{} {}",
+            class_name, function_name, n_locals
+        ))
+    }
+    pub fn constructor_alloc(&mut self) {
+        let n_fields = self
+            .class_symbol_table
+            .iter()
+            .filter(|(_, v)| matches!(v.kind, VariableKind::Field))
+            .count();
+        self.push_integer_constant(n_fields as i16);
+        self.vm_code.push(String::from("call Memory.alloc 1"));
+        self.pop_pointer(0);
+    }
+    pub fn push_call(&mut self, class_name: &str, function_name: &str, n_args: i16) {
+        self.vm_code
+            .push(format!("call {}.{} {}", class_name, function_name, n_args));
+    }
+    pub fn push_return(&mut self) {
+        self.vm_code.push(String::from("return"));
     }
     pub fn push_comment(&mut self, comment: String) {
         #[cfg(feature = "debug")]

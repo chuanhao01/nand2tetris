@@ -1,10 +1,20 @@
+// start subroutine_dec, 8
+function Main.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push pointer 0
+return
+// end subroutine_dec, 12
+// start subroutine_dec, 12
+function Main.wow_routine 6
 push local 1
 push local 2
 add
 pop local 0
 push static 0
 pop local 0
-// start if, 13
+// start if, 18
 push constant 33
 push constant 2
 eq
@@ -23,17 +33,17 @@ push constant 2
 add
 pop local 0
 label Main.flow.1
-// end if, 18
+// end if, 23
 push constant 1
 pop local 0
-// start while, 20
+// start while, 25
 label Main.flow.2
 push local 0
 push constant 3
 lt
 not
 if-goto Main.flow.3
-// start if, 21
+// start if, 26
 push local 0
 push constant 2
 eq
@@ -44,11 +54,19 @@ pop local 1
 goto Main.flow.5
 label Main.flow.4
 label Main.flow.5
-// end if, 23
+// end if, 28
 push local 0
 push constant 1
 add
 pop local 0
 goto Main.flow.2
 label Main.flow.3
-// end while, 25
+// end while, 30
+push static 0
+pop this 0
+// start subroutine_call, 32
+push pointer 0
+push constant 3
+call Main.some_method 2
+// end subroutine_call, 32
+// end subroutine_dec, 34

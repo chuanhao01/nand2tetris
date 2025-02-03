@@ -224,8 +224,12 @@ impl Parser {
         self.xml_ast.push("<subroutineDec>".to_string());
 
         // Consume ('constructor' | 'function' | 'method')
-        let token = self.advance(tokens, source)?;
-        match token._type {
+        let subroutine_kind_token = self.advance(tokens, source)?;
+        self.code_gen.push_comment(format!(
+            "start subroutine_dec, {}",
+            subroutine_kind_token.line
+        ));
+        match subroutine_kind_token._type {
             TokenType::Keyword(
                 ReservedKeywords::Constructor
                 | ReservedKeywords::Function
@@ -233,7 +237,7 @@ impl Parser {
             ) => {}
             _ => {
                 return Err(Self::error_expected_token_type(
-                    &token,
+                    &subroutine_kind_token,
                     &[
                         TokenType::Keyword(ReservedKeywords::Constructor),
                         TokenType::Keyword(ReservedKeywords::Function),
@@ -243,7 +247,7 @@ impl Parser {
                 ));
             }
         }
-        self.push_terminal(&token, source);
+        self.push_terminal(&subroutine_kind_token, source);
 
         // ('void' | type)
         let token = self.peek(tokens);
@@ -290,22 +294,6 @@ impl Parser {
         );
 
         // subroutineBody
-        self.subroutine_body(tokens, source)?;
-
-        self.xml_ast.push("</subroutineDec>".to_string());
-        #[cfg(feature = "debug")]
-        {
-            println!(
-                "{}.{} symbol table",
-                self.class_name.clone().unwrap(),
-                subroutine_name
-            );
-            println!("{:?}", self.code_gen.subroutine_symbol_table);
-            println!();
-        }
-        Ok(())
-    }
-    fn subroutine_body(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.xml_ast.push("<subroutineBody>".to_string());
 
         // '{'
@@ -322,6 +310,18 @@ impl Parser {
         while let TokenType::Keyword(ReservedKeywords::Var) = self.peek(tokens)._type {
             self.var_dec(tokens, source)?;
         }
+        // vmcode, declare the function
+        self.code_gen
+            .push_function(&self.class_name.clone().unwrap(), &subroutine_name);
+        match subroutine_kind_token._type {
+            TokenType::Keyword(ReservedKeywords::Constructor) => {
+                self.code_gen.constructor_alloc();
+            }
+            // TODO
+            TokenType::Keyword(ReservedKeywords::Method) => {}
+            TokenType::Keyword(ReservedKeywords::Function) => {}
+            _ => return Err(String::from("unexpected vmcodegen subroutine_dec")),
+        }
 
         // statements
         self.statements(tokens, source)?;
@@ -337,6 +337,20 @@ impl Parser {
         );
 
         self.xml_ast.push("</subroutineBody>".to_string());
+
+        self.xml_ast.push("</subroutineDec>".to_string());
+        #[cfg(feature = "debug")]
+        {
+            println!(
+                "{}.{} symbol table",
+                self.class_name.clone().unwrap(),
+                subroutine_name
+            );
+            println!("{:?}", self.code_gen.subroutine_symbol_table);
+            println!();
+        }
+        self.code_gen
+            .push_comment(format!("end subroutine_dec, {}", tokens[self.current].line));
         Ok(())
     }
     fn var_dec(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -870,6 +884,7 @@ impl Parser {
             TokenType::Symbol(Symbols::SemiColon),
             source
         );
+        self.code_gen.push_return();
 
         self.xml_ast.push("</returnStatement>".to_string());
         Ok(())
@@ -930,6 +945,11 @@ impl Parser {
     fn subroutine_call(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         // subroutineName | className | varName
         self.identifier(tokens, source)?;
+        self.code_gen.push_comment(format!(
+            "start subroutine_call, {}",
+            tokens[self.current - 1].line
+        ));
+        let l1_token = &tokens[self.current - 1];
         match self.peek(tokens)._type {
             TokenType::Symbol(Symbols::LeftParam) => {
                 // '('
@@ -942,7 +962,14 @@ impl Parser {
                     source
                 );
 
-                self.expression_list(tokens, source)?;
+                // since this is a call within the class, we need to set this
+                self.code_gen.push_pointer(0);
+                let no_of_expressions = self.expression_list(tokens, source)?;
+                self.code_gen.push_call(
+                    &self.class_name.clone().unwrap(),
+                    &l1_token.get_source(source),
+                    no_of_expressions as i16 + 1,
+                );
 
                 // ')'
                 let token = self.advance(tokens, source)?;
@@ -967,6 +994,7 @@ impl Parser {
 
                 // subroutineName
                 self.identifier(tokens, source)?;
+                let l2_token = &tokens[self.current - 1];
 
                 // '('
                 let token = self.advance(tokens, source)?;
@@ -978,7 +1006,7 @@ impl Parser {
                     source
                 );
 
-                self.expression_list(tokens, source)?;
+                let no_of_expressions = self.expression_list(tokens, source)?;
 
                 // ')'
                 let token = self.advance(tokens, source)?;
@@ -1002,6 +1030,10 @@ impl Parser {
                 ));
             }
         }
+        self.code_gen.push_comment(format!(
+            "end subroutine_call, {}",
+            tokens[self.current - 1].line
+        ));
         Ok(())
     }
     fn term(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
@@ -1024,13 +1056,13 @@ impl Parser {
                 // For vm codegen
                 match token._type {
                     TokenType::Keyword(
-                        ReservedKeywords::True
-                        | ReservedKeywords::False
-                        | ReservedKeywords::Null
-                        | ReservedKeywords::This,
+                        ReservedKeywords::True | ReservedKeywords::False | ReservedKeywords::Null,
                     )
                     | TokenType::String => {
                         // TODO
+                    }
+                    TokenType::Keyword(ReservedKeywords::This) => {
+                        self.code_gen.push_pointer(0);
                     }
                     TokenType::Integer(x) => {
                         self.code_gen.push_integer_constant(x as i16);
@@ -1151,8 +1183,10 @@ impl Parser {
         self.xml_ast.push("</term>".to_string());
         Ok(())
     }
-    fn expression_list(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
+    // Needs to return the number of expressions it pushed onto the stack, for vm codegen
+    fn expression_list(&mut self, tokens: &[Token], source: &[char]) -> Result<usize, String> {
         self.xml_ast.push("<expressionList>".to_string());
+        let mut no_of_expressions = 0;
         // (expression (',' expression)*)?
         match self.peek(tokens)._type {
             TokenType::Identifier
@@ -1166,6 +1200,7 @@ impl Parser {
             )
             | TokenType::Symbol(Symbols::Minus | Symbols::Tilde | Symbols::LeftParam) => {
                 self.expression(tokens, source)?;
+                no_of_expressions += 1;
 
                 // (',' expression)*
                 while let TokenType::Symbol(Symbols::Comma) = self.peek(tokens)._type {
@@ -1174,12 +1209,13 @@ impl Parser {
                     self.push_terminal(&token, source);
 
                     self.expression(tokens, source)?;
+                    no_of_expressions += 1;
                 }
             }
             _ => {}
         }
         self.xml_ast.push("</expressionList>".to_string());
-        Ok(())
+        Ok(no_of_expressions)
     }
 
     fn advance(&mut self, tokens: &[Token], source: &[char]) -> Result<Token, String> {

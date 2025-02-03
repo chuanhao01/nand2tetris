@@ -4,6 +4,11 @@ class Main{
     field int b;
     field wowClass bb;
 
+
+    constructor Main new(int lel){
+        return this;
+    }
+
     function int wow_routine(int c, wowClass d){
         var int e, ee, efg;
         var fclass f, ff, fgh;
@@ -23,5 +28,7 @@ class Main{
             }
             let e = e + 1;
         }
+        let b = a;
+        do some_method(3);
     }
 }
