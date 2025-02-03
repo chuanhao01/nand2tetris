@@ -33,4 +33,3 @@ then u have the base address at the top of the stack
 - term/expressions
   - string constant
   - keywords constant
-- complex subroutine calls with `.`

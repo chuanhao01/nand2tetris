@@ -9,6 +9,14 @@ class Main{
         return this;
     }
 
+    method int get_b(){
+        return b;
+    }
+
+    method void print(){
+        return;
+    }
+
     function int wow_routine(int c, wowClass d){
         var int e, ee, efg;
         var fclass f, ff, fgh;
@@ -29,6 +37,6 @@ class Main{
             let e = e + 1;
         }
         let b = a;
-        do some_method(3);
+        do BigClass.some_method(3);
     }
 }

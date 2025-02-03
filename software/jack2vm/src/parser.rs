@@ -317,8 +317,10 @@ impl Parser {
             TokenType::Keyword(ReservedKeywords::Constructor) => {
                 self.code_gen.constructor_alloc();
             }
-            // TODO
-            TokenType::Keyword(ReservedKeywords::Method) => {}
+            TokenType::Keyword(ReservedKeywords::Method) => {
+                self.code_gen.push_variable(&String::from("this"))?;
+                self.code_gen.pop_pointer(0);
+            }
             TokenType::Keyword(ReservedKeywords::Function) => {}
             _ => return Err(String::from("unexpected vmcodegen subroutine_dec")),
         }
@@ -848,6 +850,9 @@ impl Parser {
             source
         );
 
+        // needs to remove uncessary value from top of stack from function return
+        self.code_gen.pop_temp(0);
+
         self.xml_ast.push("</doStatement>".to_string());
         Ok(())
     }
@@ -868,6 +873,7 @@ impl Parser {
         match self.peek(tokens)._type {
             TokenType::Symbol(Symbols::SemiColon) => {
                 // Skip expression
+                self.code_gen.push_integer_constant(0);
             }
             _ => {
                 // Consume expression
@@ -995,6 +1001,15 @@ impl Parser {
                 // subroutineName
                 self.identifier(tokens, source)?;
                 let l2_token = &tokens[self.current - 1];
+                // error means we are trying to call a Class function, push dummy 0 for dummy this arg
+                if self
+                    .code_gen
+                    .push_variable(&l1_token.get_source(source))
+                    .is_err()
+                {
+                    self.code_gen.push_comment(String::from("dummy 0"));
+                    self.code_gen.push_integer_constant(0);
+                };
 
                 // '('
                 let token = self.advance(tokens, source)?;
@@ -1007,6 +1022,19 @@ impl Parser {
                 );
 
                 let no_of_expressions = self.expression_list(tokens, source)?;
+                self.code_gen
+                    .complex_subroutine_call(
+                        &l1_token.get_source(source),
+                        &l2_token.get_source(source),
+                        no_of_expressions as i16 + 1,
+                    )
+                    .map_err(|e| {
+                        format!(
+                            "VM Codegen error: {}, on line {}",
+                            e,
+                            tokens[self.current - 1].line
+                        )
+                    })?;
 
                 // ')'
                 let token = self.advance(tokens, source)?;

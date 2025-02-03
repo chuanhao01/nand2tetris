@@ -242,6 +242,9 @@ impl CodeGen {
         ));
         Ok(())
     }
+    pub fn pop_temp(&mut self, idx: i16) {
+        self.vm_code.push(format!("pop temp {}", idx));
+    }
     // Handling if-goto, goto and labels
     pub fn get_flow_counter(&mut self, class_name: &str) -> String {
         self.flow_counter += 1;
@@ -281,6 +284,30 @@ impl CodeGen {
     pub fn push_call(&mut self, class_name: &str, function_name: &str, n_args: i16) {
         self.vm_code
             .push(format!("call {}.{} {}", class_name, function_name, n_args));
+    }
+    pub fn complex_subroutine_call(&mut self, l1: &str, l2: &str, n_args: i16) -> CodeGenResult {
+        let variable_meta_data = if let Some(variable) = self.subroutine_symbol_table.get(l1) {
+            variable
+        } else if let Some(variable) = self.class_symbol_table.get(l1) {
+            variable
+        } else {
+            // is a Class function call
+            self.vm_code.push(format!("call {}.{} {}", l1, l2, n_args));
+            return Ok(());
+        };
+        match &variable_meta_data._type {
+            VariableType::Identifier(class_name) => {
+                self.vm_code
+                    .push(format!("call {}.{} {}", class_name, l2, n_args));
+            }
+            _ => {
+                return Err(format!(
+                    "subroutine call on, {}, with type {:?} is not possible",
+                    l1, variable_meta_data._type
+                ))
+            }
+        }
+        Ok(())
     }
     pub fn push_return(&mut self) {
         self.vm_code.push(String::from("return"));
