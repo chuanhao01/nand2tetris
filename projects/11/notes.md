@@ -5,3 +5,5 @@ will have to see
 - term/expressions
   - string constant
   - keywords constant
+- for variables
+  - field variables as they are part of the object

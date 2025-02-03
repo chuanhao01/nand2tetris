@@ -9,6 +9,18 @@ pub enum VariableKind {
     Argument,
     Local,
 }
+impl VariableKind {
+    pub fn to_vm_segment(&self) -> String {
+        let segment = match self {
+            // TODO
+            Self::Field => panic!("Not implemented yet"),
+            Self::Static => "static",
+            Self::Argument => "argument",
+            Self::Local => "local",
+        };
+        segment.to_string()
+    }
+}
 
 #[derive(Debug)]
 pub enum VariableType {
@@ -27,6 +39,8 @@ pub struct VariableMetaData {
     kind: VariableKind,
     number: usize,
 }
+
+type CodeGenResult = Result<(), String>;
 
 /// Used by the Parser
 /// subroutine symbol table is reset by the subroutine dec before used
@@ -193,6 +207,34 @@ impl CodeGen {
     }
     pub fn push_op(&mut self, op: VM_OPS) {
         self.vm_code.push(op.to_vm_string());
+    }
+    // handling variables
+    fn get_variable_metadata(&self, variable_name: &String) -> Result<&VariableMetaData, String> {
+        if let Some(variable) = self.subroutine_symbol_table.get(variable_name) {
+            Ok(variable)
+        } else if let Some(variable) = self.class_symbol_table.get(variable_name) {
+            Ok(variable)
+        } else {
+            return Err(format!("Variable {} not declared before", variable_name));
+        }
+    }
+    pub fn push_variable(&mut self, variable_name: &String) -> CodeGenResult {
+        let variable_metadata = self.get_variable_metadata(variable_name)?;
+        self.vm_code.push(format!(
+            "push {} {}",
+            variable_metadata.kind.to_vm_segment(),
+            variable_metadata.number
+        ));
+        Ok(())
+    }
+    pub fn pop_variable(&mut self, variable_name: &String) -> CodeGenResult {
+        let variable_metadata = self.get_variable_metadata(variable_name)?;
+        self.vm_code.push(format!(
+            "pop {} {}",
+            variable_metadata.kind.to_vm_segment(),
+            variable_metadata.number
+        ));
+        Ok(())
     }
     // Handling if-goto, goto and labels
     pub fn get_flow_counter(&mut self) -> usize {

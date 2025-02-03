@@ -7,8 +7,9 @@ class Main{
     function int wow_routine(int c, wowClass d){
         var int e, ee, efg;
         var fclass f, ff, fgh;
-        let e = ee + efg = efg;
-        let ee = ff.what_the();
+        let e = ee + efg;
+        let e = a;
+        //let ee = ff.what_the();
         if (33 = 2){
             let e = 3;
             let e = e + 3;

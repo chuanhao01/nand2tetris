@@ -1,16 +1,24 @@
+push local 1
+push local 2
 add
-eq
+pop local 0
+push static 0
+pop local 0
 push constant 33
 push constant 2
 eq
 not
 if-goto Main.flow.0
 push constant 3
+pop local 0
+push local 0
 push constant 3
 add
+pop local 0
 goto Main.flow.1
 label Main.flow.0
 push constant 3
 push constant 2
 add
+pop local 0
 label Main.flow.1

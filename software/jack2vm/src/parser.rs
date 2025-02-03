@@ -568,6 +568,8 @@ impl Parser {
 
         // varName
         self.identifier(tokens, source)?;
+        let variable_token = &tokens[self.current - 1];
+        let variable_name = &variable_token.get_source(source);
 
         // ('[' expression ']')?
         if let TokenType::Symbol(Symbols::LeftBracket) = self.peek(tokens)._type {
@@ -616,6 +618,10 @@ impl Parser {
             TokenType::Symbol(Symbols::SemiColon),
             source
         );
+        // vmcode, pop the expression into the variable
+        self.code_gen
+            .pop_variable(variable_name)
+            .map_err(|e| format!("VM Codegen error: {}, on line {}", e, variable_token.line))?;
 
         self.xml_ast.push("</letStatement>".to_string());
         Ok(())
@@ -1001,7 +1007,9 @@ impl Parser {
                         | ReservedKeywords::Null
                         | ReservedKeywords::This,
                     )
-                    | TokenType::String => {}
+                    | TokenType::String => {
+                        // TODO
+                    }
                     TokenType::Integer(x) => {
                         self.code_gen.push_integer_constant(x as i16);
                     }
@@ -1048,12 +1056,29 @@ impl Parser {
                             _ => {
                                 // Just varName
                                 self.identifier(tokens, source)?;
+                                let variable_token = &tokens[self.current - 1];
+                                let variable_name = &variable_token.get_source(source);
+                                self.code_gen.push_variable(variable_name).map_err(|e| {
+                                    format!(
+                                        "VM codegen error: {}, on line {}",
+                                        e, variable_token.line
+                                    )
+                                })?;
                             }
                         }
                     }
                     None => {
-                        // Just varName
+                        // Just varName, should almost never encounter this
+                        #[cfg(feature = "debug")]
+                        {
+                            println!("term, varname with no L(2) peek")
+                        }
                         self.identifier(tokens, source)?;
+                        let variable_token = &tokens[self.current - 1];
+                        let variable_name = &variable_token.get_source(source);
+                        self.code_gen.push_variable(variable_name).map_err(|e| {
+                            format!("VM codegen error: {}, on line {}", e, variable_token.line)
+                        })?;
                     }
                 }
             }
