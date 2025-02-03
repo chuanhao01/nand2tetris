@@ -1,9 +1,5 @@
 //function Sys.init 0
 (Sys.init)
-@0
-D=A // D = 0
-@SP
-M=D+M // SP = SP + 0
 //push constant 4
 @4
 D=A // D = 4
