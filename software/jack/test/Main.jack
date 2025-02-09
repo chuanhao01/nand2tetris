@@ -20,6 +20,7 @@ class Main{
     function int wow_routine(int c, wowClass d){
         var int e, ee, efg;
         var fclass f, ff, fgh;
+        var Arrary aa1, aa2;
         let e = ee + efg;
         let e = a;
         //let ee = ff.what_the();
@@ -38,5 +39,6 @@ class Main{
         }
         let b = a;
         do BigClass.some_method(3);
+        let aa1[e + 1] = aa2[efg + 2];
     }
 }

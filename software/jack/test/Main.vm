@@ -21,14 +21,14 @@ push constant 0
 return
 // end subroutine_dec, 20
 // start subroutine_dec, 20
-function Main.wow_routine 6
+function Main.wow_routine 8
 push local 1
 push local 2
 add
 pop local 0
 push static 0
 pop local 0
-// start if, 26
+// start if, 27
 push constant 33
 push constant 2
 eq
@@ -47,17 +47,17 @@ push constant 2
 add
 pop local 0
 label Main.flow.1
-// end if, 31
+// end if, 32
 push constant 1
 pop local 0
-// start while, 33
+// start while, 34
 label Main.flow.2
 push local 0
 push constant 3
 lt
 not
 if-goto Main.flow.3
-// start if, 34
+// start if, 35
 push local 0
 push constant 2
 eq
@@ -68,21 +68,37 @@ pop local 1
 goto Main.flow.5
 label Main.flow.4
 label Main.flow.5
-// end if, 36
+// end if, 37
 push local 0
 push constant 1
 add
 pop local 0
 goto Main.flow.2
 label Main.flow.3
-// end while, 38
+// end while, 39
 push static 0
 pop this 0
-// start subroutine_call, 40
+// start subroutine_call, 41
 // dummy 0
 push constant 0
 push constant 3
 call BigClass.some_method 2
-// end subroutine_call, 40
+// end subroutine_call, 41
 pop temp 0
-// end subroutine_dec, 42
+push local 6
+push local 0
+push constant 1
+add
+add
+push local 7
+push local 2
+push constant 2
+add
+add
+pop pointer 1
+push that 0
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+// end subroutine_dec, 44

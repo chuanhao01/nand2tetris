@@ -587,8 +587,11 @@ impl Parser {
         let variable_token = &tokens[self.current - 1];
         let variable_name = &variable_token.get_source(source);
 
+        let mut is_array = false;
+
         // ('[' expression ']')?
         if let TokenType::Symbol(Symbols::LeftBracket) = self.peek(tokens)._type {
+            is_array = true;
             // '['
             let token = self.advance(tokens, source)?;
             consume_single_terminal_token!(
@@ -599,8 +602,13 @@ impl Parser {
                 source
             );
 
+            self.code_gen
+                .push_variable(variable_name)
+                .map_err(Self::map_code_gen_err_with_token_line(variable_token.line))?;
+
             // expression
             self.expression(tokens, source)?;
+            self.code_gen.push_op(VM_OPS::ADD);
 
             // ']'
             let token = self.advance(tokens, source)?;
@@ -634,10 +642,18 @@ impl Parser {
             TokenType::Symbol(Symbols::SemiColon),
             source
         );
+
         // vmcode, pop the expression into the variable
-        self.code_gen
-            .pop_variable(variable_name)
-            .map_err(|e| format!("VM Codegen error: {}, on line {}", e, variable_token.line))?;
+        if is_array {
+            self.code_gen.pop_temp(0);
+            self.code_gen.pop_pointer(1);
+            self.code_gen.push_temp();
+            self.code_gen.pop_that();
+        } else {
+            self.code_gen
+                .pop_variable(variable_name)
+                .map_err(Self::map_code_gen_err_with_token_line(variable_token.line))?;
+        }
 
         self.xml_ast.push("</letStatement>".to_string());
         Ok(())
@@ -1028,13 +1044,9 @@ impl Parser {
                         &l2_token.get_source(source),
                         no_of_expressions as i16 + 1,
                     )
-                    .map_err(|e| {
-                        format!(
-                            "VM Codegen error: {}, on line {}",
-                            e,
-                            tokens[self.current - 1].line
-                        )
-                    })?;
+                    .map_err(Self::map_code_gen_err_with_token_line(
+                        tokens[self.current - 1].line,
+                    ))?;
 
                 // ')'
                 let token = self.advance(tokens, source)?;
@@ -1109,6 +1121,12 @@ impl Parser {
                             // index on variable
                             TokenType::Symbol(Symbols::LeftBracket) => {
                                 self.identifier(tokens, source)?;
+                                let variable_token = &tokens[self.current - 1];
+                                let variable_name = &variable_token.get_source(source);
+                                self.code_gen.push_variable(variable_name).map_err(
+                                    Self::map_code_gen_err_with_token_line(variable_token.line),
+                                )?;
+
                                 // '['
                                 let token = self.advance(tokens, source)?;
                                 consume_single_terminal_token!(
@@ -1131,6 +1149,10 @@ impl Parser {
                                     TokenType::Symbol(Symbols::RightBracket),
                                     source
                                 );
+
+                                self.code_gen.push_op(VM_OPS::ADD);
+                                self.code_gen.pop_pointer(1); // set array base address + idx
+                                self.code_gen.push_that();
                             }
                             TokenType::Symbol(Symbols::LeftBrace | Symbols::Dot) => {
                                 self.subroutine_call(tokens, source)?;
@@ -1140,12 +1162,9 @@ impl Parser {
                                 self.identifier(tokens, source)?;
                                 let variable_token = &tokens[self.current - 1];
                                 let variable_name = &variable_token.get_source(source);
-                                self.code_gen.push_variable(variable_name).map_err(|e| {
-                                    format!(
-                                        "VM codegen error: {}, on line {}",
-                                        e, variable_token.line
-                                    )
-                                })?;
+                                self.code_gen.push_variable(variable_name).map_err(
+                                    Self::map_code_gen_err_with_token_line(variable_token.line),
+                                )?;
                             }
                         }
                     }
@@ -1158,9 +1177,9 @@ impl Parser {
                         self.identifier(tokens, source)?;
                         let variable_token = &tokens[self.current - 1];
                         let variable_name = &variable_token.get_source(source);
-                        self.code_gen.push_variable(variable_name).map_err(|e| {
-                            format!("VM codegen error: {}, on line {}", e, variable_token.line)
-                        })?;
+                        self.code_gen
+                            .push_variable(variable_name)
+                            .map_err(Self::map_code_gen_err_with_token_line(variable_token.line))?;
                     }
                 }
             }
@@ -1292,6 +1311,9 @@ impl Parser {
             token.get_source(source),
             token.line
         )
+    }
+    fn map_code_gen_err_with_token_line(token_line: usize) -> impl Fn(String) -> String {
+        move |e: String| -> String { format!("VM codegen error: {}, on line {}", e, token_line) }
     }
 }
 

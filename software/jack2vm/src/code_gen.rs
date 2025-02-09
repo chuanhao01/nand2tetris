@@ -245,6 +245,18 @@ impl CodeGen {
     pub fn pop_temp(&mut self, idx: i16) {
         self.vm_code.push(format!("pop temp {}", idx));
     }
+    pub fn push_temp(&mut self) {
+        self.vm_code.push(String::from("push temp 0"));
+    }
+
+    //. Only used for arrays, that 0
+    pub fn push_that(&mut self) {
+        self.vm_code.push(String::from("push that 0"));
+    }
+    pub fn pop_that(&mut self) {
+        self.vm_code.push(String::from("pop that 0"));
+    }
+
     // Handling if-goto, goto and labels
     pub fn get_flow_counter(&mut self, class_name: &str) -> String {
         self.flow_counter += 1;
