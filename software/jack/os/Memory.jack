@@ -1,0 +1,54 @@
+class Memory{
+    // This works, because when we set the base address of the ram variable to be 0
+    // Thus when we push this value as the base address for array usage, it moves to the given address location in RAM
+    static Array ram, heap, free_list;
+
+    function void init(){
+        let ram = 0;
+
+        // Heap is implemented with the [1] = location of next free_list, [2] = size of the current free_list
+        let heap = 2048;
+        let free_list = 2048;
+        let heap[0] = 0;
+        let heap[1] = 14335;
+        return;
+    }
+
+    // returns the value at the address in RAM
+    function int peek(int address){
+        return ram[address];
+    }
+
+    // sets the value at the address in RAM
+    function void poke(int address, int value){
+        let ram[address] = value;
+        return;
+    }
+
+    // Find a free_list that can contains size + 2
+    function Array alloc(int size){
+        var Array current_free;
+        var int actual_size;
+
+        let current_free = free_list;
+        let actual_size = size + 2;
+
+        // Using first fit, found
+        while (current_free[1] < actual_size){
+            if (current_free[0] = 0){
+                // defrag, idk yet
+            }
+            let current_free = current_free[0];
+        }
+        // Create a new block at the end
+        let current_free[1] = current_free[1] - actual_size;
+        let current_free[current_free + current_free[1]] = current_free; // new next
+        let current_free[current_free + current_free[1] + 1] = actual_size; // new size
+        return current_free + current_free[1] + 2; // returns the base address of the free heap space
+    }
+
+    function void dealloc(Array block_base_address){
+        let free_list = block_base_address - 2;
+        return;
+    }
+}

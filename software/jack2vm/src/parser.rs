@@ -82,7 +82,10 @@ impl Parser {
         let result = parser.parse_tokens(&tokens, &source);
         #[cfg(feature = "debug")]
         {
-            println!("{} class symbol ", parser.class_name.unwrap());
+            println!(
+                "{} class symbol ",
+                parser.class_name.unwrap_or(String::from("empty class"))
+            );
             println!("{:?}", parser.code_gen.class_symbol_table);
             println!();
         }
@@ -94,19 +97,18 @@ impl Parser {
         source: &[char],
     ) -> Result<ParserCodeOutput, String> {
         // Returns XML string to write to file
-        let token = &tokens[self.current];
-        if let TokenType::Keyword(ReservedKeywords::Class) = token._type {
+        if let TokenType::Keyword(ReservedKeywords::Class) = &tokens[self.current]._type {
             self.class(tokens, source)?;
-        } else {
-            return Err(format!(
-                "Expected to start with class, got {}",
-                token.get_source(source)
-            ));
         }
-        Ok(ParserCodeOutput {
-            xml: self.xml_ast.join("\n"),
-            vm: self.code_gen.gen_vm_code(),
-        })
+        if let TokenType::EOF = &tokens[self.current]._type {
+            // Check if last token is EOF
+            Ok(ParserCodeOutput {
+                xml: self.xml_ast.join("\n"),
+                vm: self.code_gen.gen_vm_code(),
+            })
+        } else {
+            Err(String::from("Could not compile file at all, at the start"))
+        }
     }
     fn class(&mut self, tokens: &[Token], source: &[char]) -> ParserReturn {
         self.xml_ast.push("<class>".to_string());

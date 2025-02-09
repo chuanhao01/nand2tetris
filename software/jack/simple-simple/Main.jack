@@ -1,0 +1,7 @@
+class Main{
+    function void wow(){
+        if(2 = 3){
+            // Wow
+        }
+    }
+}

@@ -1,0 +1,22 @@
+class Sys{
+    function void init(){
+        // Initalize all OS classes
+        do Memory.init();
+
+        do Main.main();
+        do Sys.halt();
+        return;
+    }
+
+    // Loop
+    function void halt(){
+        while (true){}
+    }
+
+    // duration in ms
+    // Loop, machine-specific
+    function void wait(int duration){}
+
+    // Prints the given error code onto the screen and halts
+    function void error(int error_code){}
+}

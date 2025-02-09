@@ -1,0 +1,11 @@
+class Main{
+    static int a;
+    static int b;
+
+    function void main(){
+        let a = 1;
+        let b = 1;
+        let a = a + b;
+        return;
+    }
+}
