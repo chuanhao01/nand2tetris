@@ -11,12 +11,17 @@ class Sys{
     // Loop
     function void halt(){
         while (true){}
+        return;
     }
 
     // duration in ms
     // Loop, machine-specific
-    function void wait(int duration){}
+    function void wait(int duration){
+        return;
+    }
 
     // Prints the given error code onto the screen and halts
-    function void error(int error_code){}
+    function void error(int error_code){
+        return;
+    }
 }
