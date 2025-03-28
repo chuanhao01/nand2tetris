@@ -330,6 +330,16 @@ impl CodeGen {
             self.vm_code.push(format!("// {}", comment))
         }
     }
+    // For easier Math syntax
+    /// Called when encountering * in the parser, after both terms are already added to the vm_code
+    pub fn call_math_multiply(&mut self) {
+        self.vm_code.push(String::from("pop temp 0"));
+        self.vm_code.push(String::from("pop temp 1"));
+        self.vm_code.push(String::from("push constant 0"));
+        self.vm_code.push(String::from("push temp 0"));
+        self.vm_code.push(String::from("push temp 1"));
+        self.vm_code.push(String::from("call Math.multiply 3"));
+    }
 }
 #[allow(clippy::derivable_impls)]
 impl Default for CodeGen {

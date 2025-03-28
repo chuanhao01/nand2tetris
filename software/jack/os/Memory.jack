@@ -9,7 +9,7 @@ class Memory{
         // Heap is implemented with the [0] = size of current free block, [1] = location of next free_list
         let heap = 2048; // Heap Base Address
         let heap[0] = 0;
-        let heap[1] = 14335; // 16384 - 2048
+        let heap[1] = 14334; // 16384 - 2048
         return;
     }
 
@@ -52,7 +52,7 @@ class Memory{
         return free_block + 2;
     }
 
-    function void dealloc(Array block_base_address){
+    function void deAlloc(Array block_base_address){
         var Array free_block;
         let free_block = block_base_address - 2;
         // Adding the deallocated free block to the front

@@ -958,7 +958,9 @@ impl Parser {
                     self.code_gen.push_op(VM_OPS::EQ);
                 }
                 // TODO: OS method calls
-                TokenType::Symbol(Symbols::Asterisk) => {}
+                TokenType::Symbol(Symbols::Asterisk) => {
+                    self.code_gen.call_math_multiply();
+                }
                 TokenType::Symbol(Symbols::Slash) => {}
                 _ => return Err(String::from("expression codegen, not")),
             }
@@ -1117,7 +1119,7 @@ impl Parser {
             TokenType::Identifier => {
                 // Decide between varName, varName '[' and subroutine_call
                 // LL(2)
-                match self.peek_n(1, tokens, source) {
+                match self.peek_n(1, tokens) {
                     Some(next_token) => {
                         match next_token._type {
                             // index on variable
@@ -1217,9 +1219,8 @@ impl Parser {
                     TokenType::Symbol(Symbols::Tilde) => VM_OPS::NOT,
                     _ => return vm_codegen_err,
                 };
-                self.code_gen.push_op(op);
-
                 self.term(tokens, source)?;
+                self.code_gen.push_op(op);
             }
             _ => {
                 return Err(format!(
@@ -1284,7 +1285,7 @@ impl Parser {
     fn peek(&self, tokens: &[Token]) -> Token {
         tokens[self.current].clone()
     }
-    fn peek_n(&self, n: usize, tokens: &[Token], source: &[char]) -> Option<Token> {
+    fn peek_n(&self, n: usize, tokens: &[Token]) -> Option<Token> {
         if self.current + n >= tokens.len() {
             None
         } else {

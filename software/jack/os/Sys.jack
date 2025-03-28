@@ -2,6 +2,7 @@ class Sys{
     function void init(){
         // Initalize all OS classes
         do Memory.init();
+        do Math.init();
 
         do Main.main();
         do Sys.halt();
