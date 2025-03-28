@@ -248,6 +248,9 @@ impl CodeGen {
     pub fn push_temp(&mut self) {
         self.vm_code.push(String::from("push temp 0"));
     }
+    fn push_temp_idx(&mut self, idx: i16) {
+        self.vm_code.push(format!("push temp {}", idx));
+    }
 
     //. Only used for arrays, that 0
     pub fn push_that(&mut self) {
@@ -331,14 +334,22 @@ impl CodeGen {
         }
     }
     // For easier Math syntax
+    /// For Math.multiply and Math.divide
+    fn setup_math_call(&mut self) {
+        self.pop_temp(0);
+        self.pop_temp(1);
+        self.push_integer_constant(0);
+        self.push_temp_idx(0);
+        self.push_temp_idx(1);
+    }
     /// Called when encountering * in the parser, after both terms are already added to the vm_code
     pub fn call_math_multiply(&mut self) {
-        self.vm_code.push(String::from("pop temp 0"));
-        self.vm_code.push(String::from("pop temp 1"));
-        self.vm_code.push(String::from("push constant 0"));
-        self.vm_code.push(String::from("push temp 0"));
-        self.vm_code.push(String::from("push temp 1"));
-        self.vm_code.push(String::from("call Math.multiply 3"));
+        self.setup_math_call();
+        self.push_call("Math", "multiply", 3);
+    }
+    pub fn call_math_divide(&mut self) {
+        self.setup_math_call();
+        self.push_call("Math", "divide", 3);
     }
 }
 #[allow(clippy::derivable_impls)]

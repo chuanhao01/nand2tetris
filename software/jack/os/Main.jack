@@ -9,6 +9,9 @@ class Main {
         let temp = (-10) * 20;
         do Memory.poke(8002, temp);  // RAM[8002] = -200
 
+        let temp = 100 / 3;
+        do Memory.poke(8003, temp);  // RAM[8003] = 5
+        do Memory.poke(8004, 10);
         return;
     }
 

@@ -15,6 +15,25 @@ class Math{
         return;
     }
 
+    function int abs(int x){
+        if (x < 0){
+            return -x;
+        }
+        return x;
+    }
+    function int min(int x, int y){
+        if (x < y){
+            return x;
+        }
+        return y;
+    }
+    function int max(int x, int y){
+        if (x < y){
+            return y;
+        }
+        return x;
+    }
+
     function int multiply(int x, int y){
         var int sum, shifted_x;
         var int i;
@@ -31,5 +50,48 @@ class Math{
             let i = i + 1;
         }
         return sum;
+    }
+    /**
+    function int divide(int x, int y){
+        var int q, s;
+        if (y > x){
+            return 0;
+        }
+        let q = Math.divide(x, y + y);
+        let s = q * y;
+        if ((x - (s + s)) < y){
+            return q + q;
+        } else {
+            return q + q + 1;
+        }
+    }
+    */
+    function int divide(int x, int y) {
+        var int q,result;
+        var boolean pos;
+
+        let pos = ((x < 0) = (y < 0));
+
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+
+        if(y > x){
+            return 0;
+        }
+
+        let q = Math.divide(x,y + y);
+
+        if((x - (2 * q * y)) < y){
+            let result = q + q;
+        }else{
+            let result = q + q + 1;
+        }
+
+        if(pos){
+            return result;
+        }else{
+            return -result;
+        }
+
     }
 }

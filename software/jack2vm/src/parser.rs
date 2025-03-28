@@ -961,7 +961,9 @@ impl Parser {
                 TokenType::Symbol(Symbols::Asterisk) => {
                     self.code_gen.call_math_multiply();
                 }
-                TokenType::Symbol(Symbols::Slash) => {}
+                TokenType::Symbol(Symbols::Slash) => {
+                    self.code_gen.call_math_divide();
+                }
                 _ => return Err(String::from("expression codegen, not")),
             }
         }
