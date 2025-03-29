@@ -717,10 +717,10 @@ impl Parser {
             source
         );
 
-        self.statements(tokens, source)?;
         // vmcode
+        self.statements(tokens, source)?;
         self.code_gen.push_goto(&l2);
-        self.code_gen.push_label(&l1);
+        self.code_gen.push_label(&l1); // Condition did not pass, so we jump to else
 
         // '}'
         let token = self.advance(tokens, source)?;
