@@ -64,6 +64,24 @@ class Math{
             return q + q + 1;
         }
     }
+    function int sqrt(int x){
+        var int y, j, i, n;
+        let y = 0;
+        let j = 7;
+        while (j > -1) {
+            // Create the n required for 2^j
+            let i = 0;
+            let n = 1;
+            while (j > i) {
+                let n = n + n;
+                let i = i + 1;
+            }
+            if ((y + n) * (y + n) < (x + 1)){
+                let y = y + n;
+            }
+        }
+        return y;
+    }
     /**
     function int divide(int x, int y) {
         var int q, result;

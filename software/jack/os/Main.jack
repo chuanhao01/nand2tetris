@@ -12,6 +12,9 @@ class Main {
         let temp = 100 / 20;
         do Memory.poke(8003, temp);  // RAM[8003] = 5
         do Memory.poke(8004, 10);
+
+        let temp = Math.sqrt(100);
+        do Memory.poke(8005, temp);  // RAM[8003] = 10
         return;
     }
 
