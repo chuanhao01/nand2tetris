@@ -336,11 +336,11 @@ impl CodeGen {
     // For easier Math syntax
     /// For Math.multiply and Math.divide
     fn setup_math_call(&mut self) {
-        self.pop_temp(0);
-        self.pop_temp(1);
+        self.pop_temp(0); // y
+        self.pop_temp(1); // x
         self.push_integer_constant(0);
-        self.push_temp_idx(0);
-        self.push_temp_idx(1);
+        self.push_temp_idx(1); // x
+        self.push_temp_idx(0); // y
     }
     /// Called when encountering * in the parser, after both terms are already added to the vm_code
     pub fn call_math_multiply(&mut self) {
