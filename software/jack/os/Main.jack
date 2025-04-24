@@ -1,13 +1,8 @@
 class Main {
     function void main() {
-        var int temp;
+        var Array r;          // stores test results;
 
-        let temp = 10 * 3;
-        do Memory.poke(8000, temp);  // RAM[8000] = 30
-        let temp = -10 * -20;
-        do Memory.poke(8001, temp);  // RAM[8001] = 200
-        let temp = (-10) * 20;
-        do Memory.poke(8002, temp);  // RAM[8002] = -200
+        let r = 8000;
 
         let temp = 100 / 20;
         do Memory.poke(8003, temp);  // RAM[8003] = 5
