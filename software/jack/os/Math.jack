@@ -43,7 +43,7 @@ class Math{
         let i = 0;
         while (i < 16){
             // Check if the i'th bit of y is not 0
-            if ((bit_mask[i] & y) > 0){
+            if (~((bit_mask[i] & y) = 0)){
                 let sum = sum + shifted_x;
             }
             let shifted_x = shifted_x + shifted_x;
@@ -51,6 +51,7 @@ class Math{
         }
         return sum;
     }
+    /**
     function int divide(int x, int y){
         var int q, s;
         if (y > x){
@@ -64,6 +65,7 @@ class Math{
             return q + q + 1;
         }
     }
+    */
     function int sqrt(int x){
         var int y, j, i, n;
         let y = 0;
@@ -83,9 +85,8 @@ class Math{
         }
         return y;
     }
-    /**
     function int divide(int x, int y) {
-        var int q, result;
+        var int q, s, result;
         var boolean pos;
 
         let pos = ((x < 0) = (y < 0));
@@ -93,24 +94,23 @@ class Math{
         let x = Math.abs(x);
         let y = Math.abs(y);
 
-        if(y > x){
+        if (y > x) {
             return 0;
         }
 
-        let q = Math.divide(x,y + y);
-
-        if((x - (2 * q * y)) < y){
+        let q = Math.divide(x ,y + y);
+        let s = q * y;
+        if ((x - (s + s)) < y) {
             let result = q + q;
-        }else{
+        } else {
             let result = q + q + 1;
         }
 
-        if(pos){
+        if (pos) {
             return result;
-        }else{
+        } else {
             return -result;
         }
 
     }
-    */
 }
