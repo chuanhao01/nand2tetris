@@ -79,6 +79,7 @@ class Math{
             if ((y + n) * (y + n) < (x + 1)){
                 let y = y + n;
             }
+            let j = j - 1;
         }
         return y;
     }
