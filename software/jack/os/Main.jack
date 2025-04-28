@@ -4,7 +4,7 @@ class Main {
         var String s;
         let s = String.new(10);
         do s.setInt(123);
-        do Memory.poke(8000, 10);
+        do Memory.poke(8000, s.intValue());
 
         return;
     }
