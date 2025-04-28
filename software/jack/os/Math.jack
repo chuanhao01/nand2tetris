@@ -33,6 +33,10 @@ class Math{
         }
         return x;
     }
+    // TODO: Optimize
+    function int mod(int x, int y){
+        return x - ((x/y) * y);
+    }
 
     function int multiply(int x, int y){
         var int sum, shifted_x;

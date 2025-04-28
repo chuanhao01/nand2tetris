@@ -1,18 +1,11 @@
 class Main {
     /** Performs various mathematical operations, using calls to the Math class methods. */
     function void main() {
-        var Array a, b, c;
-        let a = Array.new(3);
-        let b = Array.new(3);
-        let c = Array.new(500);
+        var String s;
+        let s = String.new(10);
+        do s.setInt(123);
+        do Memory.poke(8000, 10);
 
-        do a.dispose();
-        do b.dispose();
-
-        let b = Array.new(3);
-
-        do c.dispose();
-        do b.dispose();
         return;
     }
 
