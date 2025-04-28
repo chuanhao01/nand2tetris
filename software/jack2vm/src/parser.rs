@@ -1101,10 +1101,14 @@ impl Parser {
                 self.advance(tokens, source)?;
                 // For vm codegen
                 match token._type {
-                    TokenType::Keyword(
-                        ReservedKeywords::True | ReservedKeywords::False | ReservedKeywords::Null,
-                    )
-                    | TokenType::String => {
+                    TokenType::Keyword(ReservedKeywords::True) => {
+                        self.code_gen.push_integer_constant(1);
+                        self.code_gen.push_op(VM_OPS::NEG);
+                    }
+                    TokenType::Keyword(ReservedKeywords::False | ReservedKeywords::Null) => {
+                        self.code_gen.push_integer_constant(0);
+                    }
+                    TokenType::String => {
                         // TODO
                     }
                     TokenType::Keyword(ReservedKeywords::This) => {

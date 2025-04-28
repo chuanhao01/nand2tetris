@@ -12,7 +12,6 @@ pub enum VariableKind {
 impl VariableKind {
     pub fn to_vm_segment(&self) -> String {
         let segment = match self {
-            // TODO
             Self::Field => "this",
             Self::Static => "static",
             Self::Argument => "argument",
@@ -292,8 +291,9 @@ impl CodeGen {
             .iter()
             .filter(|(_, v)| matches!(v.kind, VariableKind::Field))
             .count();
+        self.push_integer_constant(0);
         self.push_integer_constant(n_fields as i16);
-        self.vm_code.push(String::from("call Memory.alloc 1"));
+        self.vm_code.push(String::from("call Memory.alloc 2"));
         self.pop_pointer(0);
     }
     pub fn push_call(&mut self, class_name: &str, function_name: &str, n_args: i16) {
