@@ -1,30 +1,18 @@
 class Main {
     /** Performs various mathematical operations, using calls to the Math class methods. */
     function void main() {
-        var Array r;          // stores the test results;
+        var Array a, b, c;
+        let a = Array.new(3);
+        let b = Array.new(3);
+        let c = Array.new(500);
 
-        let r = 8000;
-        let r[-2] = 1 * (100);
-        let r[-1] = 1 * (-100);
+        do a.dispose();
+        do b.dispose();
 
-        let r[0] = 2 * 3;                  // 6
-        let r[1] = r[0] * (-30);           // 6 * (-30) = -180
-        let r[2] = r[1] * 100;             // (-180) * 100 = -18000
-        let r[3] = 1 * r[2];               // 1 * (-18000) = -18000 Something wong here
-        let r[4] = r[3] * 0;               // 0
+        let b = Array.new(3);
 
-        let r[5] = 9 / 3;                  // 3
-        let r[6] = (-18000) / 6;           // -3000
-        let r[7] = 32766 / (-32767);       // 0
-
-        let r[8] = Math.sqrt(9);           // 3
-        let r[9] = Math.sqrt(32767);       // 181
-
-        let r[10] = Math.min(345, 123);    // 123
-        let r[11] = Math.max(123, -345);   // 123
-        let r[12] = Math.abs(27);          // 27
-        let r[13] = Math.abs(-32767);      // 32767
-
+        do c.dispose();
+        do b.dispose();
         return;
     }
 
