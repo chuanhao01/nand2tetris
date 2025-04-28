@@ -117,4 +117,10 @@ class Math{
         }
 
     }
+
+    // n should be 0 <= n <= 15
+    // Returns 2^n useful for bit mask
+    function int two_power_n(int n){
+        return bit_mask[n];
+    }
 }
