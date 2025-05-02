@@ -123,7 +123,7 @@ class String {
 
     // Concats the current string with s
     method String concat(String s){
-        var i;
+        var int i;
         var String ns;
         let ns = String.new(length + s.length());
         let i = 0;

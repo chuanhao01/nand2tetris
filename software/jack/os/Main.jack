@@ -5,6 +5,7 @@ class Main {
         let s = String.new(10);
         do s.setInt(123);
         do Memory.poke(8000, s.intValue());
+        do Screen.drawLine(0,0,511,240);        // base line
 
         return;
     }

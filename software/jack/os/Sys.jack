@@ -3,6 +3,7 @@ class Sys{
         // Initalize all OS classes
         do Memory.init();
         do Math.init();
+        do Screen.init();
 
         do Main.main();
         do Sys.halt();

@@ -11,11 +11,13 @@
  */
 class Screen {
     static int screen_base_address;
-    field bool color;
+    static bool color;
 
     /** Initializes the Screen. */
     function void init() {
         let screen_base_address = 16384;
+        let color = true;
+        return;
     }
 
     /** Erases the entire screen. */
@@ -40,19 +42,54 @@ class Screen {
     function void drawPixel(int x, int y) {
         var int addr, v, bm; // RAM addr
 
-        let addr = y * 32 + (x / 16);
+        let addr = screen_base_address + (y * 32) + (x / 16);
         let v = Memory.peek(addr);
         let bm = Math.two_power_n(Math.mod(x, 16));
         if (color){
-            do Memory.poke(v | bm);
+            do Memory.poke(addr, v | bm);
         } else {
-            do Memory.poke(v & (~bm));
+            do Memory.poke(addr, v & (~bm));
         }
         return;
     }
 
     /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
     function void drawLine(int x1, int y1, int x2, int y2) {
+        var int dx, dy, dir_x, dir_y, ady_minus_bdx;
+        let ady_minus_bdx = 0;
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+        if (dx = 0){
+            // TODO: Special case for vertical lines
+            return;
+        }
+        if (dy = 0){
+            // TODO: Special case for horizontal lines
+            return;
+        }
+        if (dx > 0) {
+            let dir_x = 1;
+        } else {
+            let dir_x = -1;
+        }
+        if (dy > 0){
+            let dir_y = 1;
+        } else {
+            let dir_y = -1;
+        }
+        do Screen.drawPixel(x1, y1);
+        while(~(x2 = x1) | ~(y2 = y1)){
+            if(ady_minus_bdx < 0){
+                let x1 = x1 + dir_x;
+                let ady_minus_bdx = ady_minus_bdx + (dir_x * dy);
+            } else {
+                let y1 = y1 + dir_y;
+                let ady_minus_bdx = ady_minus_bdx - (dir_y * dx);
+            }
+            do Screen.drawPixel(x1, y1);
+        }
+        return;
+
     }
 
     /** Draws a filled rectangle whose top left corner is (x1, y1)
