@@ -59,14 +59,6 @@ class Screen {
         let ady_minus_bdx = 0;
         let dx = x2 - x1;
         let dy = y2 - y1;
-        if (dx = 0){
-            // TODO: Special case for vertical lines
-            return;
-        }
-        if (dy = 0){
-            // TODO: Special case for horizontal lines
-            return;
-        }
         if (dx > 0) {
             let dir_x = 1;
         } else {
@@ -76,6 +68,24 @@ class Screen {
             let dir_y = 1;
         } else {
             let dir_y = -1;
+        }
+        if (dx = 0){
+            // Special case for vertical lines
+            do Screen.drawPixel(x1, y1);
+            while(~(y2 = y1)){
+                let y1 = y1 + dir_y;
+                do Screen.drawPixel(x1, y1);
+            }
+            return;
+        }
+        if (dy = 0){
+            // Special case for horizontal lines
+            do Screen.drawPixel(x1, y1);
+            while(~(x2 = x1)){
+                let x1 = x1 + dir_x;
+                do Screen.drawPixel(x1, y1);
+            }
+            return;
         }
         do Screen.drawPixel(x1, y1);
         while(~(x2 = x1) | ~(y2 = y1)){
@@ -95,6 +105,20 @@ class Screen {
     /** Draws a filled rectangle whose top left corner is (x1, y1)
      * and bottom right corner is (x2,y2), using the current color. */
     function void drawRectangle(int x1, int y1, int x2, int y2) {
+        do Screen.drawLine(x1, y1, x1, y2);
+        while((x2 + 1) > x1){
+            let x1 = x1 + 1;
+            do Screen.drawLine(x1, y1, x1, y2);
+        }
+        return;
+    }
+
+    function void drawEmptyRectangle(int x1, int y1, int x2, int y2) {
+        do Screen.drawLine(x1, y1, x1, y2);
+        do Screen.drawLine(x1, y1, x2, y1);
+        do Screen.drawLine(x2, y1, x2, y2);
+        do Screen.drawLine(x1, y2, x2, y2);
+        return;
     }
 
     /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */

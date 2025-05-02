@@ -5,7 +5,12 @@ class Main {
         let s = String.new(10);
         do s.setInt(123);
         do Memory.poke(8000, s.intValue());
-        do Screen.drawLine(0,0,511,240);        // base line
+        do Screen.drawLine(0,220,511,220);        // base line
+        do Screen.drawRectangle(280,90,410,220);  // house
+
+        do Screen.setColor(false);
+        do Screen.drawRectangle(350,120,390,219); // door
+        do Screen.drawRectangle(292,120,332,150); // window
 
         return;
     }
